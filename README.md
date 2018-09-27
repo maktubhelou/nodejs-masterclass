@@ -12,7 +12,7 @@ This is the second of several homework assignments you'll receive in this course
 
 You are building the API for a pizza-delivery company. Don't worry about a frontend, just build the API. Here's the spec from your project manager:
 
-1. [ ] New users can be created, their information can be edited, and they can be deleted. We should store their name, email address, and street address.
+1. [√] New users can be created, their information can be edited, and they can be deleted. We should store their name, email address, and street address.
 2. [ ] Users can log in and log out by creating or destroying a token.
 3. [ ] When a user is logged in, they should be able to GET all the possible menu items (these items can be hardcoded into the system).
 4. [ ] A logged-in user should be able to fill a shopping cart with menu items
