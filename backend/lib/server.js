@@ -73,7 +73,7 @@ server.unifiedServer = (req, res) => {
       } else {
         console.log(
           "\x1b[31m%s\x1b[0m",
-          "SUCCESS: " +
+          "WARNING/FAILED: " +
             method.toUpperCase() +
             " " +
             trimmedPath +
@@ -91,7 +91,9 @@ server.router = {
   greeting: handlers.greeting,
   users: handlers.users,
   tokens: handlers.tokens,
-  orders: handlers.orders
+  orders: handlers.orders,
+  menu: handlers.menu,
+  pay: handlers.pay
 };
 
 server.init = () => {

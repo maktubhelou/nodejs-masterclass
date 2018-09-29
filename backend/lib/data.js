@@ -34,6 +34,34 @@ lib.create = (dir, file, data, callback) => {
   );
 };
 
+lib.append = (dir, file, str, callback) => {
+  fs.open(
+    lib.baseDir + dir + "/" + file + ".json",
+    "a",
+    (err, fileDescriptor) => {
+      if (!err && fileDescriptor) {
+        fs.appendFile(fileDescriptor, "\n" + str, err => {
+          if (!err) {
+            fs.close(fileDescriptor, err => {
+              if (!err) {
+                callback(false);
+              } else {
+                callback(500, {
+                  Error: "error closing file that was being appended."
+                });
+              }
+            });
+          } else {
+            callback("error appending to file");
+          }
+        });
+      } else {
+        callback("could not open file for appending.");
+      }
+    }
+  );
+};
+
 lib.read = (dir, file, callback) => {
   fs.readFile(
     lib.baseDir + dir + "/" + file + ".json",
