@@ -1,1 +1,9 @@
-{"data":{"invoiceId":"Invoice-1538227754937","items":[{"title":"Pizza","price":10,"qty":25}],"subTotal":250,"tax":37.5,"total":287.5}}
+{
+  "data": {
+    "invoiceId": "Invoice-1538266293758",
+    "items": [{ "title": "Burgers", "price": 2, "qty": 45 }],
+    "subTotal": 90,
+    "tax": 13.5,
+    "total": 103.5
+  }
+}

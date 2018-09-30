@@ -1,7 +1,7 @@
 const https = require("https");
 const querystring = require("querystring");
 const config = require("./config");
-const _data = require("./data");
+const helpers = require("./helpers");
 
 const stripe = {};
 
@@ -32,6 +32,8 @@ stripe.charge = async ({ amount, currency, source, description = "" }) => {
       }
     };
 
+    console.log(helpers.ansiColorString.MAGENTA, stringPayload);
+
     const request = https.request(requestDetails, res => {
       const status = res.statusCode;
       if (status === 200 || status === 201) {
@@ -44,8 +46,6 @@ stripe.charge = async ({ amount, currency, source, description = "" }) => {
     request.on("error", err => {
       reject(err);
     });
-
-    console.log(stringPayload);
 
     request.write(stringPayload);
 

@@ -6,9 +6,9 @@ const mailgun = {};
 
 module.exports = mailgun;
 
-mailgun.send = async (to, subject, text) => {
+mailgun.send = async (to, subject, text, html) => {
   return new Promise((resolve, reject) => {
-    if (!to || !subject || !text) {
+    if (!to || !subject || (!text || !html)) {
       reject(new Error("Missing Required Fields."));
     }
 
@@ -16,6 +16,7 @@ mailgun.send = async (to, subject, text) => {
       to,
       subject,
       text,
+      html,
       from: config.mailgun.from
     };
 
@@ -29,7 +30,7 @@ mailgun.send = async (to, subject, text) => {
       auth: `${config.mailgun.authUserName}:${config.mailgun.privateKey}`,
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        "Content-Lenght": Buffer.byteLength(stringPayload)
+        "Content-Length": Buffer.byteLength(stringPayload)
       }
     };
 

@@ -1,12 +1,10 @@
 const _data = require("./data");
-const config = require("./config");
 const helpers = require("./helpers");
 const menu = require("./menu");
 const handlers = {};
 const ShoppingCart = require("./ShoppingCart");
 const stripe = require("./stripe");
 const mailgun = require("./mailgun");
-// const stripe = require("stripe")(config.stripeKey);
 
 handlers.greeting = (data, callback) => {
   callback(200, { Greeting: "Why hello there, what would you like to order?" });
@@ -551,14 +549,16 @@ handlers.pay = (data, callback) => {
 
 handlers._pay = {};
 
-// @TODO: complete payment methods.
 handlers._pay.post = async (data, callback) => {
-  const { total, invoiceId } = shoppingCart.data;
+  const { total, invoiceId, items } = shoppingCart.data;
   const token = "tok_visa";
   const currency = "usd";
-  // @TODO: remove stripe API from node_modules and build from scratch.
+  let details = "";
+  items.forEach(
+    item => (details += "<li>" + item.qty + " " + item.title + "(s)" + "</li>")
+  );
   try {
-    stripe.charge({
+    await stripe.charge({
       amount: total,
       currency,
       source: token,
@@ -566,8 +566,9 @@ handlers._pay.post = async (data, callback) => {
     });
     const email = "markallanevans@gmail.com";
     const subject = `Invoice for order number ${invoiceId}.`;
-    const message = `Your order for invoice number ${invoiceId} has been successful. The charges come to $${total}.`;
-    mailgun.send(email, subject, message);
+    const text = `Invoice: Your order for invoice number ${invoiceId} has been successful.\nThe charges come to $${total}.\n\n Please call us at 555-555-5555 if you have any last-minute requests within the next 5 seconds.`;
+    const html = `<h1>Invoice:</h1><p>Your order for invoice number <strong>${invoiceId}</strong> has been successful.\nThe charges come to $${total}.\n\n Please call us at 555-555-5555 if you have any last-minute requests within the next 5 seconds.</p><ul>${details}</li>`;
+    await mailgun.send(email, subject, text, html);
     callback(200);
   } catch (err) {
     callback(400, err);
