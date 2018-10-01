@@ -22,12 +22,29 @@ _Add the ability to create a user profile such as favorite toppings so that they
 
 This is an open-ended assignment. You may take any direction you'd like to go with it, as long as your project includes the requirements. It can include anything else you wish as well.
 
-Additional Todos:
+### Enpoints
 
-- [ ] add debugging
-- [ ] Improve e-mail to be automatically sent (use HTML and include the order).
-- [ ] refactor code for sending e-mail (polish it up and organize it better)
-- [ ] add logs of sent orders
-- [ ] add listing feature
-- [ ] add admin login to ad items to menu
-- [ ] @TODO: make sure that email is only sent if the payment is successful.
+| URL Enpoints            | action                                           | required fields                                                          |
+| ----------------------- | ------------------------------------------------ | ------------------------------------------------------------------------ |
+| **/greeting**           | Returns a greeting                               | none                                                                     |
+| /users:                 |
+| post:                   | create a user                                    | firstName, lastName, phone, email, streetAddress, password, tosAgreement |
+| get:                    | get user data                                    | phone, headers: token                                                    |
+| put:                    | update a user                                    |
+| delete:                 | delete a user                                    |
+| **/tokens**             |
+| post:                   | create a token                                   | phone, password, email                                                   |
+| get:                    | retrieve a token                                 | tokenId, password                                                        |
+| put:                    | update a token                                   | tokenId, password                                                        |
+| delete:                 | destroy a token                                  | tokenId                                                                  |
+| **/menu**               |
+| get:                    | retrieve entire menu                             | token                                                                    |
+| **/orders**             |
+| post:                   | add an item to shopping cart                     | token, title, quantity, price                                            |
+| delete:                 | remove an item from shopping cart                | token, title, quantity (to reduce)                                       |
+| **/pay:**               |                                                  |                                                                          |
+| post:                   | make credit card payment for shopping cart items | token, phone, street address, email                                      |
+| **Additional Handlers** |                                                  |                                                                          |
+| notFound:               | 404-Not Found                                    |                                                                          |
+| sendEmailInvoice:       | send e-mail                                      |                                                                          |
+| verifyToken:            | verify user data                                 |                                                                          |
