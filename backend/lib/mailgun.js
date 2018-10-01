@@ -1,6 +1,8 @@
 const https = require("https");
 const querystring = require("querystring");
 const config = require("./config");
+const util = require("util");
+const debug = util.debuglog("mailgun");
 
 const mailgun = {};
 
@@ -39,7 +41,7 @@ mailgun.send = async (to, subject, text, html) => {
       if (status === 200 || status === 201) {
         resolve();
       } else {
-        console.log(response);
+        debug(response);
         reject(new Error(`Email sending has failed with error: ${status}`));
       }
     });

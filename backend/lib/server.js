@@ -7,6 +7,8 @@ const StringDecoder = require("string_decoder").StringDecoder;
 const config = require("./config");
 const handlers = require("./handlers");
 const helpers = require("./helpers");
+const util = require("util");
+const debug = util.debuglog("server");
 
 const server = {};
 
@@ -59,7 +61,7 @@ server.unifiedServer = (req, res) => {
       res.end(payloadString);
 
       if (statusCode === 200) {
-        console.log(
+        debug(
           "\x1b[32m%s\x1b[0m",
           "SUCCESS: " +
             method.toUpperCase() +
@@ -71,7 +73,7 @@ server.unifiedServer = (req, res) => {
             payloadString
         );
       } else {
-        console.log(
+        debug(
           "\x1b[31m%s\x1b[0m",
           "WARNING/FAILED: " +
             method.toUpperCase() +

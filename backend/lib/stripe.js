@@ -2,20 +2,29 @@ const https = require("https");
 const querystring = require("querystring");
 const config = require("./config");
 const helpers = require("./helpers");
+const util = require("util");
+const debug = util.debuglog("stripe");
 
 const stripe = {};
 
-stripe.charge = async ({ amount, currency, source, description = "" }) => {
+stripe.charge = async ({
+  amount,
+  currency,
+  source,
+  description = "",
+  capture = true
+}) => {
   return new Promise((resolve, reject) => {
     if (!amount || !source || !currency) {
       reject(new Error("Missing required payment fields."));
     }
 
     const payload = {
-      amount: amount * 100,
+      amount,
       currency,
       source,
-      description
+      description,
+      capture
     };
 
     const stringPayload = querystring.stringify(payload);
@@ -23,23 +32,36 @@ stripe.charge = async ({ amount, currency, source, description = "" }) => {
     const requestDetails = {
       protocol: "https:",
       hostname: config.stripe.host,
+      port: 443,
       method: "POST",
       path: "/v1/charges",
-      auth: `${config.stripe.key}:`,
+      // auth: `${config.stripe.key}:`,
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        "Content-Length": Buffer.byteLength(stringPayload)
+        "Content-Length": Buffer.byteLength(stringPayload),
+        Authorization: `Bearer ${config.stripe.key}`
       }
     };
 
-    console.log(helpers.ansiColorString.MAGENTA, stringPayload);
+    debug(helpers.ansiColorString.MAGENTA, stringPayload);
 
-    const request = https.request(requestDetails, res => {
+    const request = https.request(requestDetails, async res => {
       const status = res.statusCode;
+      let responseBodyString = "";
+      await res.on("data", chunk => {
+        responseBodyString += chunk;
+      });
+
       if (status === 200 || status === 201) {
-        resolve();
+        resolve({
+          success: true,
+          responseBody: JSON.parse(responseBodyString)
+        });
       } else {
-        reject(new Error(`Payment has failed with status ${status}`));
+        reject({
+          success: false,
+          responseBody: JSON.parse(responseBodyString)
+        });
       }
     });
 

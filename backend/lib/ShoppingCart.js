@@ -1,11 +1,16 @@
+const util = require("util");
+const debug = util.debuglog("ShoppingCart");
+
 class ShoppingCart {
   constructor() {
     this.data = {};
     this.data.invoiceId = "Invoice-" + Date.now();
+    this.data.email = "";
     this.data.items = [];
     this.data.subTotal = 0;
     this.data.tax = 0;
     this.data.total = 0;
+    this.data.stripeTotal = 0;
   }
 
   itemInCart(product) {
@@ -29,7 +34,7 @@ class ShoppingCart {
     };
     const isInCart = this.itemInCart(product);
     if (isInCart.inCart) {
-      console.log("item already in cart at: ", isInCart.itemIndex);
+      debug("item already in cart at: ", isInCart.itemIndex);
       this.data.items[isInCart.itemIndex].qty += qty;
     } else {
       this.data.items.push(prod);
@@ -38,14 +43,13 @@ class ShoppingCart {
 
   removeItem(product, qty) {
     const isInCart = this.itemInCart(product);
-    console.log(isInCart, qty);
+    debug(isInCart, qty);
     if (isInCart.inCart) {
-      console.log("item already in cart at: ", isInCart.itemIndex);
+      debug("item already in cart at: ", isInCart.itemIndex);
       const newQty = this.data.items;
-      console.log(newQty);
       this.data.items[isInCart.itemIndex].qty -= qty;
     } else {
-      console.log("item not in cart.");
+      debug("item not in cart.");
     }
   }
 
@@ -59,6 +63,8 @@ class ShoppingCart {
     });
     this.data.tax = this.data.subTotal * 0.15;
     this.data.total = this.data.subTotal + this.data.tax;
+    this.data.invoiceTotal = Math.ceil(this.data.total * 100) / 100;
+    this.data.stripeTotal = Math.ceil(this.data.total * 100);
   }
 }
 

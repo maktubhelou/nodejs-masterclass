@@ -5,6 +5,8 @@ const handlers = {};
 const ShoppingCart = require("./ShoppingCart");
 const stripe = require("./stripe");
 const mailgun = require("./mailgun");
+const util = require("util");
+const debut = util.debuglog("handlers");
 
 handlers.greeting = (data, callback) => {
   callback(200, { Greeting: "Why hello there, what would you like to order?" });
@@ -90,6 +92,8 @@ handlers._users.post = (data, callback) => {
 
 handlers._users.get = (data, callback) => {
   const phone = data.queryStringObject.phone;
+  const token =
+    typeof data.headers.token === "string" ? data.headers.token : false;
   handlers._tokens.verifyToken(token, phone, tokenIsValid => {
     if (tokenIsValid) {
       _data.read("users", phone, (err, data) => {
@@ -169,7 +173,7 @@ handlers._users.put = (data, callback) => {
                 if (!err) {
                   callback(200, { Status: "user successfully updated." });
                 } else {
-                  console.log(err);
+                  debug(err);
                   callback(500, { Status: "could not update the user." });
                 }
               });
@@ -235,9 +239,12 @@ handlers.tokens = (data, callback) => {
   }
 };
 
+// Container for tokens handlers
 handlers._tokens = {};
 
+// Create a token
 handlers._tokens.post = (data, callback) => {
+  // Validate data
   const phone =
     typeof data.payload.phone === "string" &&
     data.payload.phone.trim().length === 10
@@ -248,15 +255,19 @@ handlers._tokens.post = (data, callback) => {
     data.payload.password.trim().length > 8
       ? data.payload.password.trim()
       : false;
+
   if (phone && password) {
+    // Read user data
     _data.read("users", phone, (err, userData) => {
       if (!err && userData) {
         const hashedPassword = helpers.hash(password);
         if (hashedPassword === userData.password) {
+          const email = userData.email;
           const tokenId = helpers.createRandomString(20);
           const expires = Date.now() * 1000 * 60 * 60 * 72;
           const tokenObject = {
             phone,
+            email,
             tokenId,
             expires
           };
@@ -468,7 +479,6 @@ handlers._orders.delete = (data, callback) => {
       ? data.headers.token.trim()
       : false;
 
-  console.log(token, data.headers.token, data.headers.token.length);
   if (item && quantity && phone && token) {
     handlers._tokens.verifyToken(token, phone, tokenIsValid => {
       if (tokenIsValid) {
@@ -549,30 +559,96 @@ handlers.pay = (data, callback) => {
 
 handlers._pay = {};
 
+// Required fields: email, phone, streetAddress
+// Optional fields: none
 handlers._pay.post = async (data, callback) => {
-  const { total, invoiceId, items } = shoppingCart.data;
-  const token = "tok_visa";
-  const currency = "usd";
-  let details = "";
-  items.forEach(
-    item => (details += "<li>" + item.qty + " " + item.title + "(s)" + "</li>")
-  );
-  try {
-    await stripe.charge({
-      amount: total,
-      currency,
-      source: token,
-      description: "Pizza DELIVERY Charge" + "-" + invoiceId
+  const phone =
+    typeof data.payload.phone === "string" &&
+    data.payload.phone.trim().length === 10
+      ? data.payload.phone.trim()
+      : false;
+  const email =
+    typeof data.payload.email === "string" &&
+    data.payload.email.trim().length > 0 &&
+    data.payload.email.includes("@")
+      ? data.payload.email.trim()
+      : false;
+  const streetAddress =
+    typeof data.payload.streetAddress === "string" &&
+    data.payload.streetAddress.trim().length > 0
+      ? data.payload.streetAddress.trim()
+      : false;
+  console.log(phone, email, streetAddress, data.headers.token);
+  if (phone && email && streetAddress) {
+    const token =
+      typeof data.headers.token === "string" &&
+      data.headers.token.trim().length === 20
+        ? data.headers.token.trim()
+        : false;
+    //@TODO: add verify token logic
+
+    handlers._tokens.verifyToken(token, phone, async tokenIsValid => {
+      if (tokenIsValid) {
+        const {
+          stripeTotal,
+          invoiceTotal,
+          invoiceId,
+          items
+        } = shoppingCart.data;
+        const stripeToken = "tok_visa";
+        const currency = "usd";
+        let details = "";
+        items.forEach(item => {
+          if (item.qty === 1) {
+            details += "<li>" + item.qty + " " + item.title + "</li>";
+          } else {
+            details += "<li>" + item.qty + " " + item.title + "s</li>";
+          }
+        });
+        try {
+          await stripe.charge({
+            amount: stripeTotal,
+            currency,
+            source: stripeToken,
+            description: "Pizza DELIVERY Charge" + "-" + invoiceId
+          });
+
+          const orderObj = {
+            email,
+            invoiceId,
+            invoiceTotal,
+            details,
+            streetAddress,
+            phone
+          };
+
+          await handlers.sendEmailInvoice(orderObj);
+          callback(200);
+        } catch (err) {
+          callback(400, err);
+        }
+      } else {
+        callback(405, "Missing credentials.");
+      }
     });
-    const email = "markallanevans@gmail.com";
-    const subject = `Invoice for order number ${invoiceId}.`;
-    const text = `Invoice: Your order for invoice number ${invoiceId} has been successful.\nThe charges come to $${total}.\n\n Please call us at 555-555-5555 if you have any last-minute requests within the next 5 seconds.`;
-    const html = `<h1>Invoice:</h1><p>Your order for invoice number <strong>${invoiceId}</strong> has been successful.\nThe charges come to $${total}.\n\n Please call us at 555-555-5555 if you have any last-minute requests within the next 5 seconds.</p><ul>${details}</li>`;
-    await mailgun.send(email, subject, text, html);
-    callback(200);
-  } catch (err) {
-    callback(400, err);
+  } else {
+    callback(400, "Missing Required field(s).");
   }
+};
+
+handlers.sendEmailInvoice = async orderObj => {
+  const {
+    invoiceId,
+    invoiceTotal,
+    streetAddress,
+    phone,
+    email,
+    details
+  } = orderObj;
+  const subject = `Invoice for order number ${invoiceId}.`;
+  const text = `Invoice: Your order for invoice number ${invoiceId} has been successful.\nThe charges come to $${invoiceTotal}.\n\n Please call us at 555-555-5555 if you have any last-minute requests within the next 5 seconds.`;
+  const html = `<h1>Invoice:</h1><p>Your order for invoice number <strong>${invoiceId}</strong> has been successful.\nThe charges come to $${invoiceTotal}.\n\n Please call us at 555-555-5555 if you have any last-minute requests within the next 5 seconds.</p><ul>${details}</li><div><p>This order will be shipped to ${streetAddress}.</p>`;
+  await mailgun.send(email, subject, text, html);
 };
 
 handlers.notFound = (data, callback) => {
@@ -581,4 +657,5 @@ handlers.notFound = (data, callback) => {
   });
 };
 
+console.log(handlers);
 module.exports = handlers;
