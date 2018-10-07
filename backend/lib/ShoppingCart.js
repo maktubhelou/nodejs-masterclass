@@ -1,66 +1,54 @@
+const helpers = require("./helpers");
 const util = require("util");
 const debug = util.debuglog("ShoppingCart");
 
 class ShoppingCart {
   constructor() {
     this.data = {};
+    this.customerDetails = {};
     this.data.invoiceId = "Invoice-" + Date.now();
-    this.data.email = "";
     this.data.items = [];
     this.data.subTotal = 0;
     this.data.tax = 0;
     this.data.total = 0;
     this.data.stripeTotal = 0;
+    this.data.sizeTally = { sm: 0, med: 0, lg: 0 };
   }
 
-  itemInCart(product) {
-    let inCart = false;
-    let itemIndex = -1;
-    this.data.items.forEach((item, index) => {
-      if (item.title === product.title) {
-        inCart = true;
-        itemIndex = index;
-      }
-    });
-    return { inCart, itemIndex };
+  addCustomerDetails(detailObject) {
+    this.customerDetails = detailObject;
   }
 
-  addToCart(product = null, qty = 1) {
-    let prod = {
-      id: product.id,
-      title: product.title,
-      price: product.price,
-      qty: qty
-    };
-    const isInCart = this.itemInCart(product);
-    if (isInCart.inCart) {
-      debug("item already in cart at: ", isInCart.itemIndex);
-      this.data.items[isInCart.itemIndex].qty += qty;
-    } else {
-      this.data.items.push(prod);
-    }
+  cartHasItem(pizzaObj) {
+    return this.data.items.includes(pizzaObj);
   }
 
-  removeItem(product, qty) {
-    const isInCart = this.itemInCart(product);
-    debug(isInCart, qty);
-    if (isInCart.inCart) {
-      debug("item already in cart at: ", isInCart.itemIndex);
-      const newQty = this.data.items;
-      this.data.items[isInCart.itemIndex].qty -= qty;
-    } else {
-      debug("item not in cart.");
-    }
+  addToCart(pizzaObj) {
+    this.data.items.push(pizzaObj);
   }
+
+  // @TODO add removeItems method
 
   calculateTotals() {
     this.data.subTotal = 0;
+    const newsizeTally = { sm: 0, med: 0, lg: 0 };
+
     this.data.items.forEach(item => {
-      let price = item.price;
-      let qty = item.qty;
-      const amount = price * qty;
-      this.data.subTotal += amount;
+      switch (item.size) {
+        case "sm":
+          newsizeTally.sm++;
+          break;
+        case "med":
+          newsizeTally.med++;
+          break;
+        case "lg":
+          newsizeTally.lg++;
+          break;
+      }
     });
+    this.data.sizeTally = newsizeTally;
+    const { sm, med, lg } = this.data.sizeTally;
+    this.data.subTotal = sm * 8 + med * 12 + lg * 15;
     this.data.tax = this.data.subTotal * 0.15;
     this.data.total = this.data.subTotal + this.data.tax;
     this.data.invoiceTotal = Math.ceil(this.data.total * 100) / 100;

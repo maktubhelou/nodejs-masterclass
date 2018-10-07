@@ -19,6 +19,7 @@ stripe.charge = async ({
       reject(new Error("Missing required payment fields."));
     }
 
+    // Format the payload
     const payload = {
       amount,
       currency,
@@ -27,15 +28,16 @@ stripe.charge = async ({
       capture
     };
 
+    // Convert the payload to a string
     const stringPayload = querystring.stringify(payload);
 
+    // Format request details
     const requestDetails = {
       protocol: "https:",
       hostname: config.stripe.host,
       port: 443,
       method: "POST",
       path: "/v1/charges",
-      // auth: `${config.stripe.key}:`,
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
         "Content-Length": Buffer.byteLength(stringPayload),

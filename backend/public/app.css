@@ -1,0 +1,210 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+    Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+}
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.header {
+  background-color: rgb(244, 194, 177);
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: baseline;
+}
+
+.logo img {
+  width: 75px;
+  height: 75px;
+  padding: 15px;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 50px 0px;
+}
+
+.footer {
+  background-color: rgb(244, 194, 177);
+  display: flex;
+  padding: 20px 0;
+  justify-content: center;
+  font-size: 11px;
+  color: rgb(215, 54, 0);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header ul {
+  float: right;
+  display: flex;
+  justify-self: center;
+}
+
+.header li {
+  list-style-type: none;
+  padding: 0 10px;
+}
+
+.header ul li a {
+  line-height: 10px;
+  text-decoration: none;
+  text-transform: uppercase;
+  font-weight: 900 !important;
+  font-size: 11px;
+  color: rgb(203, 22, 22);
+}
+
+.content > h1,
+h2,
+.blurb {
+  margin-top: 10px;
+}
+
+.ctaWrapper {
+  margin-top: 50px;
+}
+
+.primary {
+  background-color: rgb(221, 108, 16);
+}
+
+.secondary {
+  background-color: rgb(248, 183, 32);
+}
+
+.content .cta {
+  color: white;
+  padding: 25px 50px;
+  border-radius: 5px;
+}
+
+.loggedOut {
+  display: none;
+}
+
+.loggedIn {
+  flex-direction: row;
+  flex-wrap: nowrap;
+}
+
+.formWrapper {
+  margin: 0 auto;
+  max-width: 500px;
+  padding: 15px;
+}
+
+.formError {
+  display: none;
+  background-color: #c83737;
+  font-style: italic;
+  color: #fff;
+  padding: 10px 15px;
+  border-radius: 5px;
+  margin: 0 0 15px 0;
+  text-align: center;
+  border-color: #d87070;
+  border-width: 2px;
+  border-style: solid;
+}
+
+.formSuccess {
+  display: none;
+  background-color: #217844;
+  font-style: italic;
+  color: #fff;
+  padding: 10px 15px;
+  border-radius: 5px;
+  margin: 0 0 15px 0;
+  text-align: center;
+  border-color: #35c06d;
+  border-width: 2px;
+  border-style: solid;
+}
+
+input,
+select,
+option {
+  border-width: 1px;
+  border-radius: 2px;
+  padding: 7px 1%;
+  width: 100%;
+}
+
+input.disabled {
+  background-color: #efefef;
+}
+
+.inputWrapper {
+  text-align: center;
+  padding: 0 0 20px 0;
+}
+
+.inputLabel {
+  padding: 0 0 5px 0;
+  color: #808080;
+}
+
+.backButton {
+  text-transform: uppercase;
+  font-weight: bold !important;
+  display: inline-block !important;
+  width: 100px;
+  padding: 7px !important;
+  color: #fff !important;
+  background-color: #1a1a1a;
+  text-align: center;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+hr {
+  margin: 30px 0;
+}
+
+.checkboxGroup input {
+  display: inline-block;
+  width: initial;
+  margin: 20px;
+}
+
+/*
+* Menu Styles
+*/
+.content table {
+  width: 80%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.menu table,
+th,
+td {
+  border-bottom: 1px solid black;
+  padding: 10px;
+}
+
+.menu td:nth-child(1) {
+  background-color: rgba(233, 145, 64, 0.101);
+}
+
+.menu th {
+  background-color: rgba(255, 123, 0, 0.4);
+}

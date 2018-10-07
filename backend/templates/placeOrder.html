@@ -1,0 +1,26 @@
+<h1>Place an Order Here</h1>
+
+<div class="formWrapper">
+  <form action="/api/carts" method="POST" id="placeOrder">
+    <div class="formError"></div>
+
+    <div class="inputWrapper">
+      <div class="inputLabel">Pizza Type</div>
+      <select name="type" id="pizzaType">
+      </select>
+    </div>
+    <div class="inputWrapper">
+      <div class="inputLabel">Size</div>
+      <select name="size" id="pizzaSize">
+        <option value="sm">sm</option>
+        <option value="med">med</option>
+        <option value="lg">lg</option>
+      </select>
+    </div>
+    <div class="inputWrapper">
+      <div class="inputLabel">Quantity</div>
+      <input name="quantity" type="text" id="pizzaQty">
+    </div>
+    <input type="submit" class="cta primary" value="Order">
+  </form>
+</div>

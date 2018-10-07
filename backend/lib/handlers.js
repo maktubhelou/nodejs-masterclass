@@ -3,16 +3,324 @@ const helpers = require("./helpers");
 const menu = require("./menu");
 const handlers = {};
 const ShoppingCart = require("./ShoppingCart");
+const Pizza = require("./Pizza");
 const stripe = require("./stripe");
 const mailgun = require("./mailgun");
 const util = require("util");
-const debut = util.debuglog("handlers");
+const debug = util.debuglog("handlers");
+
+/*
+*
+* HTML Handlers
+*
+*/
+
+handlers.index = (data, callback) => {
+  if (data.method === "get") {
+    debug(helpers.ansiColorString.MAGENTA, "Beginning Index Call");
+    // Prepare data for interpolation.
+    const templateData = {
+      "head.title": "Pizzapp - Pizza Your Way, Every Day",
+      "head.description": "Simple. Fast. Delicious.",
+      "body.class": "index"
+    };
+
+    // Read in the template as a string
+    helpers.getTemplate("index", templateData, (err, str) => {
+      debug("Retrieving Template Data");
+      if (!err && str) {
+        // Add the universal templates.
+        helpers.addUniversalTemplates(str, templateData, (err, fullString) => {
+          debug("Template Data Retrieved", templateData);
+          if (!err && fullString) {
+            debug(helpers.ansiColorString.MAGENTA, "Success");
+            callback(200, fullString, "html");
+          } else {
+            callback(500, undefined, "html");
+          }
+        });
+      } else {
+        callback(500, undefined, "html");
+      }
+    });
+  } else {
+    callback(405, undefined, "html");
+  }
+};
+
+// Favicon
+handlers.favicon = (data, callback) => {
+  if (data.method === "get") {
+    helpers.getStaticAsset("favicon.ico", (err, faviconData) => {
+      if (!err && faviconData) {
+        callback(200, faviconData, "favicon");
+      } else {
+        callback(500);
+      }
+    });
+  } else {
+    callback(405);
+  }
+};
+
+// Public assets
+handlers.public = (data, callback) => {
+  if (data.method === "get") {
+    // Get the filename being requested
+    const trimmedAssetName = data.trimmedPath.replace("public", "").trim();
+    if (trimmedAssetName.length > 0) {
+      helpers.getStaticAsset(trimmedAssetName, (err, data) => {
+        if (!err && data) {
+          // Determine the content type and default to plain.
+          let contentType = "plain";
+          if (trimmedAssetName.indexOf(".css") > -1) {
+            contentType = "css";
+          }
+          if (trimmedAssetName.indexOf(".png") > -1) {
+            contentType = "png";
+          }
+          if (trimmedAssetName.indexOf(".jpg") > -1) {
+            contentType = "jpg";
+          }
+          if (trimmedAssetName.indexOf(".ico") > -1) {
+            contentType = "favicon";
+          }
+          callback(200, data, contentType);
+        } else {
+          callback(404);
+        }
+      });
+    } else {
+      callback(404);
+    }
+  } else {
+    callback(405);
+  }
+};
+
+// Create an Account
+handlers.accountCreate = (data, callback) => {
+  if (data.method === "get") {
+    //Prepare data for interpolation.
+    const templateData = {
+      "head.title": "Create an Account",
+      "head.description": "Signup is easy and only takes a few seconds.",
+      "body.class": "accountCreate"
+    };
+
+    // Read in the template as a string
+    helpers.getTemplate("accountCreate", templateData, (err, str) => {
+      if (!err && str) {
+        // Add the universal templates.
+        helpers.addUniversalTemplates(str, templateData, (err, fullString) => {
+          if (!err && fullString) {
+            callback(200, fullString, "html");
+          } else {
+            callback(500, undefined, "html");
+          }
+        });
+      } else {
+        callback(500, undefined, "html");
+      }
+    });
+  } else {
+    callback(405, undefined, "html");
+  }
+};
+
+// Log in
+handlers.sessionCreate = (data, callback) => {
+  if (data.method === "get") {
+    //Prepare data for interpolation.
+    const templateData = {
+      "head.title": "Log in to your Account",
+      "head.description": "Login to start ordering your favourite pizza.",
+      "body.class": "sessionCreate"
+    };
+
+    // Read in the template as a string
+    helpers.getTemplate("sessionCreate", templateData, (err, str) => {
+      if (!err && str) {
+        // Add the universal templates.
+        helpers.addUniversalTemplates(str, templateData, (err, fullString) => {
+          if (!err && fullString) {
+            callback(200, fullString, "html");
+          } else {
+            callback(500, undefined, "html");
+          }
+        });
+      } else {
+        callback(500, undefined, "html");
+      }
+    });
+  } else {
+    callback(405, undefined, "html");
+  }
+};
+// Edit Account
+handlers.accountEdit = (data, callback) => {
+  if (data.method === "get") {
+    //Prepare data for interpolation.
+    const templateData = {
+      "head.title": "Edit Your Account Details",
+      "head.description": "Edit Your Account Details or Delete Your Account.",
+      "body.class": "accountEdit"
+    };
+
+    // Read in the template as a string
+    helpers.getTemplate("accountEdit", templateData, (err, str) => {
+      if (!err && str) {
+        // Add the universal templates.
+        helpers.addUniversalTemplates(str, templateData, (err, fullString) => {
+          if (!err && fullString) {
+            callback(200, fullString, "html");
+          } else {
+            callback(500, undefined, "html");
+          }
+        });
+      } else {
+        callback(500, undefined, "html");
+      }
+    });
+  } else {
+    callback(405, undefined, "html");
+  }
+};
+// Place Order
+handlers.placeOrder = (data, callback) => {
+  if (data.method === "get") {
+    //Prepare data for interpolation.
+    const templateData = {
+      "head.title": "Place Your Oder",
+      "head.description": "Place an Order here.",
+      "body.class": "placeOrder"
+    };
+
+    // Read in the template as a string
+    helpers.getTemplate("placeOrder", templateData, (err, str) => {
+      if (!err && str) {
+        // Add the universal templates.
+        helpers.addUniversalTemplates(str, templateData, (err, fullString) => {
+          if (!err && fullString) {
+            callback(200, fullString, "html");
+          } else {
+            callback(500, undefined, "html");
+          }
+        });
+      } else {
+        callback(500, undefined, "html");
+      }
+    });
+  } else {
+    callback(405, undefined, "html");
+  }
+};
+// Edit Account
+handlers.sessionDeleted = (data, callback) => {
+  if (data.method === "get") {
+    //Prepare data for interpolation.
+    const templateData = {
+      "head.title": "Logged Out",
+      "head.description": "You have been logged out of your account.",
+      "body.class": "sessionDeleted"
+    };
+
+    // Read in the template as a string
+    helpers.getTemplate("sessionDeleted", templateData, (err, str) => {
+      if (!err && str) {
+        // Add the universal templates.
+        helpers.addUniversalTemplates(str, templateData, (err, fullString) => {
+          if (!err && fullString) {
+            callback(200, fullString, "html");
+          } else {
+            callback(500, undefined, "html");
+          }
+        });
+      } else {
+        callback(500, undefined, "html");
+      }
+    });
+  } else {
+    callback(405, undefined, "html");
+  }
+};
+
+handlers.cartsList = (data, callback) => {
+  if (data.method === "get") {
+    //Prepare data for interpolation.
+    const templateData = {
+      "head.title": "Shopping Carts",
+      "head.description":
+        "Here are all the current Shopping Carts you have in the aisles.",
+      "body.class": "cartsList"
+    };
+
+    // Read in the template as a string
+    helpers.getTemplate("cartsList", templateData, (err, str) => {
+      if (!err && str) {
+        // Add the universal templates.
+        helpers.addUniversalTemplates(str, templateData, (err, fullString) => {
+          if (!err && fullString) {
+            callback(200, fullString, "html");
+          } else {
+            callback(500, undefined, "html");
+          }
+        });
+      } else {
+        callback(500, undefined, "html");
+      }
+    });
+  } else {
+    callback(405, undefined, "html");
+  }
+};
+
+handlers.viewMenu = (data, callback) => {
+  if (data.method === "get") {
+    //Prepare data for interpolation.
+    const templateData = {
+      "head.title": "Pizza Menu",
+      "head.description":
+        "Here are all the delicious menu items available to you!",
+      "body.class": "viewMenu"
+    };
+
+    // Read in the template as a string
+    helpers.getTemplate("viewMenu", templateData, (err, str) => {
+      if (!err && str) {
+        // Add the universal templates.
+        helpers.addUniversalTemplates(str, templateData, (err, fullString) => {
+          if (!err && fullString) {
+            callback(200, fullString, "html");
+          } else {
+            callback(500, undefined, "html");
+          }
+        });
+      } else {
+        callback(500, undefined, "html");
+      }
+    });
+  } else {
+    callback(405, undefined, "html");
+  }
+};
+
+/*
+*
+* JSON Api Handlers
+*
+*/
 
 handlers.greeting = (data, callback) => {
   callback(200, { Greeting: "Why hello there, what would you like to order?" });
 };
 
+handlers.ping = (data, callback) => {
+  callback(200);
+};
+
 handlers.users = (data, callback) => {
+  debug(helpers.ansiColorString.BLUE, data.method);
   const acceptableMethods = ["post", "get", "put", "delete"];
   if (acceptableMethods.indexOf(data.method) > -1) {
     handlers._users[data.method](data, callback);
@@ -26,6 +334,11 @@ handlers._users = {};
 // Required data: firstName, lastName, phone, streetAddress, email, password, tosAgreement
 // Optional data: none
 handlers._users.post = (data, callback) => {
+  debug(
+    helpers.ansiColorString.BLUE,
+    "Create User Post Request Received by API.",
+    data
+  );
   const firstName =
     typeof data.payload.firstName === "string" &&
     data.payload.firstName.trim().length > 0
@@ -59,6 +372,10 @@ handlers._users.post = (data, callback) => {
       : false;
   const tosAgreement =
     typeof data.payload.tosAgreement === "boolean" ? true : false;
+  debug(
+    helpers.ansiColorString.GREEN,
+    `${firstName} ${lastName} ${phone} ${streetAddress} ${email} ${password} ${tosAgreement}`
+  );
   if (
     firstName &&
     lastName &&
@@ -94,6 +411,7 @@ handlers._users.get = (data, callback) => {
   const phone = data.queryStringObject.phone;
   const token =
     typeof data.headers.token === "string" ? data.headers.token : false;
+  console.log(phone, token);
   handlers._tokens.verifyToken(token, phone, tokenIsValid => {
     if (tokenIsValid) {
       _data.read("users", phone, (err, data) => {
@@ -106,7 +424,9 @@ handlers._users.get = (data, callback) => {
         }
       });
     } else {
-      callback(405, { Error: "the provided token is not valid." });
+      callback(405, {
+        Error: "Cannot retrieve user. The provided token is not valid."
+      });
     }
   });
 };
@@ -194,7 +514,6 @@ handlers._users.put = (data, callback) => {
 };
 
 // Require: phone
-// @TODO Clean up (delete) any other data files associated with this user.
 handlers._users.delete = (data, callback) => {
   const phone =
     typeof data.queryStringObject.phone === "string" &&
@@ -208,21 +527,41 @@ handlers._users.delete = (data, callback) => {
       if (tokenIsValid) {
         _data.read("users", phone, (err, userData) => {
           if (!err && userData) {
+            // _data.delete("cart", phone, err => {
+            //   if (!err) {
+            //     callback(200, { Status: "carts deleted." });
+            //   } else {
+            //     callback(400, {
+            //       Error: "could not delete the specified user."
+            //     });
+            //   }
+            // });
             _data.delete("users", phone, err => {
               if (!err) {
                 callback(200, { Status: "user deleted." });
               } else {
                 callback(400, {
-                  Error: "could not delete the specified user."
+                  Error: "could not delete the specified user's shopping carts."
                 });
               }
             });
+            // _data.delete("tokens", token, err => {
+            //   if (!err) {
+            //     callback(200, { Status: "token deleted." });
+            //   } else {
+            //     callback(400, {
+            //       Error: "could not delete the specified user's tokens."
+            //     });
+            //   }
+            // });
           } else {
             callback(404, { Error: "could not find the specified user." });
           }
         });
       } else {
-        callback(405, { Error: "the provided token is not valid." });
+        callback(405, {
+          Error: "The token you are attempting to verify is not valid."
+        });
       }
     });
   } else {
@@ -578,15 +917,12 @@ handlers._pay.post = async (data, callback) => {
     data.payload.streetAddress.trim().length > 0
       ? data.payload.streetAddress.trim()
       : false;
-  console.log(phone, email, streetAddress, data.headers.token);
   if (phone && email && streetAddress) {
     const token =
       typeof data.headers.token === "string" &&
       data.headers.token.trim().length === 20
         ? data.headers.token.trim()
         : false;
-    //@TODO: add verify token logic
-
     handlers._tokens.verifyToken(token, phone, async tokenIsValid => {
       if (tokenIsValid) {
         const {
@@ -636,18 +972,159 @@ handlers._pay.post = async (data, callback) => {
   }
 };
 
+handlers.carts = (data, callback) => {
+  const acceptableMethods = ["post", "get", "put", "delete"];
+  if (acceptableMethods.indexOf(data.method) > -1) {
+    handlers._carts[data.method](data, callback);
+  } else {
+    callback(405, { Status: "Method not allowed." });
+  }
+};
+
+handlers._carts = {};
+
+// Create a shopping cart
+// Required data: token
+handlers._carts.post = (data, callback) => {
+  const token =
+    typeof data.headers.token === "string" ? data.headers.token : false;
+  const pizza =
+    typeof data.payload.pizza == "object" ? data.payload.pizza : false;
+  _data.read("tokens", token, (err, tokenData) => {
+    if (!err && tokenData) {
+      const phone = tokenData.phone;
+      const customerDetails = {
+        phone
+      };
+      _data.read("users", phone, (err, userData) => {
+        if (!err && userData) {
+          customerDetails.email = userData.email;
+          customerDetails.streetAddress = userData.streetAddress;
+          customerDetails.firstName = userData.firstName;
+          customerDetails.lastName = userData.lastName;
+          let addedPizza = {};
+          if (pizza) {
+            addedPizza = new Pizza(pizza.type, pizza.size, pizza.addedToppings);
+          }
+          const shoppingCart = new ShoppingCart();
+          shoppingCart.addCustomerDetails(customerDetails);
+          shoppingCart.addToCart(addedPizza);
+          shoppingCart.calculateTotals();
+          _data.create("carts", phone, shoppingCart, err => {
+            if (!err) {
+              callback(200, shoppingCart);
+            } else {
+              callback(500, {
+                Error: `Could not create cart, or cart already exists. Use PUT Method to update order ID# ${
+                  shoppingCart.data.invoiceId
+                }.`
+              });
+            }
+          });
+        } else {
+          callback(500);
+        }
+      });
+    } else {
+      callback(403, { Error: "Token data is incorrect. Please log in again." });
+    }
+  });
+};
+
+// Read a shopping cart
+handlers._carts.get = (data, callback) => {
+  const token =
+    typeof data.headers.token === "string" ? data.headers.token : false;
+  if (token) {
+    _data.read("tokens", token, (err, tokenData) => {
+      if (!err && tokenData) {
+        const phone = tokenData.phone;
+        _data.read("carts", phone, (err, cartData) => {
+          if (!err && cartData) {
+            callback(false, cartData);
+          } else {
+            callback(400, { Status: "Cannot find order data." });
+          }
+        });
+      } else {
+        callback(400, { Status: "Cannot find the required information." });
+      }
+    });
+  } else {
+    callback(400, { Status: "Missing Credentials." });
+  }
+};
+
+// Update a shopping cart
+handlers._carts.put = (data, callback) => {
+  const token =
+    typeof data.headers.token === "string" ? data.headers.token : false;
+  const pizza =
+    typeof data.payload.pizza == "object" ? data.payload.pizza : false;
+  _data.read("tokens", token, (err, tokenData) => {
+    if (!err && tokenData) {
+      const phone = tokenData.phone;
+      _data.read("carts", phone, (err, cartData) => {
+        if (!err && cartData) {
+          const shoppingCart = new ShoppingCart();
+          shoppingCart.data = cartData.data;
+          shoppingCart.customerDetails = cartData.customerDetails;
+          let addedPizza = {};
+          if (pizza) {
+            addedPizza = new Pizza(pizza.type, pizza.size, pizza.addedToppings);
+          }
+          shoppingCart.addToCart(addedPizza);
+          shoppingCart.calculateTotals();
+          _data.update("carts", phone, shoppingCart, err => {
+            if (!err) {
+              callback(200, shoppingCart);
+            } else {
+              callback(500, {
+                Error: `Could not create cart, or cart already exists. Use PUT Method to update order ID# ${
+                  shoppingCart.data.invoiceId
+                }.`
+              });
+            }
+          });
+        } else {
+          callback(500);
+        }
+      });
+    } else {
+      callback(403, { Error: "Token data is incorrect. Please log in again." });
+    }
+  });
+};
+
+// Delete a shopping cart
+handlers._carts.delete = (data, callback) => {
+  const token =
+    typeof data.headers.token === "string" ? data.headers.token : false;
+  if (token) {
+    _data.read("tokens", token, (err, tokenData) => {
+      if (!err && tokenData) {
+        const phone = tokenData.phone;
+        _data.delete("carts", phone, err => {
+          if (!err) {
+            callback(200, { Status: "the order has been deleted." });
+          } else {
+            callback(400, { Status: "Cannot find order data." });
+          }
+        });
+      } else {
+        callback(400, { Status: "Cannot find the required information." });
+      }
+    });
+  } else {
+    callback(400, { Status: "Missing Credentials." });
+  }
+};
+
 handlers.sendEmailInvoice = async orderObj => {
-  const {
-    invoiceId,
-    invoiceTotal,
-    streetAddress,
-    phone,
-    email,
-    details
-  } = orderObj;
+  const { invoiceId, invoiceTotal, streetAddress, email, details } = orderObj;
   const subject = `Invoice for order number ${invoiceId}.`;
   const text = `Invoice: Your order for invoice number ${invoiceId} has been successful.\nThe charges come to $${invoiceTotal}.\n\n Please call us at 555-555-5555 if you have any last-minute requests within the next 5 seconds.`;
-  const html = `<h1>Invoice:</h1><p>Your order for invoice number <strong>${invoiceId}</strong> has been successful.\nThe charges come to $${invoiceTotal}.\n\n Please call us at 555-555-5555 if you have any last-minute requests within the next 5 seconds.</p><ul>${details}</li><div><p>This order will be shipped to ${streetAddress}.</p>`;
+  const html = `<h1>Invoice:</h1><p>Your order for invoice number <strong>${invoiceId}</strong> has been successful.\nThe charges come to $${invoiceTotal}.\n\n Please call us at 555-555-5555 if you have any last-minute requests within the next 5 seconds.</p><ul>${details}</li><p>This order will be shipped to ${streetAddress}.</p>`;
   await mailgun.send(email, subject, text, html);
 };
 
@@ -657,5 +1134,4 @@ handlers.notFound = (data, callback) => {
   });
 };
 
-console.log(handlers);
 module.exports = handlers;
