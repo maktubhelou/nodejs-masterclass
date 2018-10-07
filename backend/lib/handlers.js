@@ -411,7 +411,6 @@ handlers._users.get = (data, callback) => {
   const phone = data.queryStringObject.phone;
   const token =
     typeof data.headers.token === "string" ? data.headers.token : false;
-  console.log(phone, token);
   handlers._tokens.verifyToken(token, phone, tokenIsValid => {
     if (tokenIsValid) {
       _data.read("users", phone, (err, data) => {
@@ -591,7 +590,7 @@ handlers._tokens.post = (data, callback) => {
       : false;
   const password =
     typeof data.payload.password === "string" &&
-    data.payload.password.trim().length > 8
+    data.payload.password.trim().length >= 8
       ? data.payload.password.trim()
       : false;
 
@@ -986,6 +985,7 @@ handlers._carts = {};
 // Create a shopping cart
 // Required data: token
 handlers._carts.post = (data, callback) => {
+  console.log(data);
   const token =
     typeof data.headers.token === "string" ? data.headers.token : false;
   const pizza =

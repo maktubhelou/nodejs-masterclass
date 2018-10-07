@@ -18,7 +18,6 @@ app.client.request = (
   callback
 ) => {
   // Set the defaults
-  console.log("Method requested", method);
   headers = typeof headers === "object" && headers !== null ? headers : {};
   path = typeof path === "string" ? path : "/";
   method =
@@ -61,8 +60,9 @@ app.client.request = (
   }
 
   // If there is a current session token set, add that as a header
+  console.log("SessionToken Check", app.config.sessionToken);
   if (app.config.sessionToken) {
-    xhr.setRequestHeader("token", app.config.sessionToken.id);
+    xhr.setRequestHeader("token", app.config.sessionToken.tokenId);
   }
 
   // When the request comes back, handl the response
@@ -85,7 +85,6 @@ app.client.request = (
 
   // Send the payload as JSON
   let payloadString = JSON.stringify(payload);
-  console.log(payloadString);
   xhr.send(payloadString);
 };
 
@@ -163,14 +162,6 @@ app.bindForms = function() {
         // If the method is DELETE, the payload should be a queryStringObject instead
         var queryStringObject = method == "DELETE" ? payload : {};
 
-        // Call the API
-        console.log(
-          "ready to call API with following: ",
-          "path: " + path,
-          "method: " + method,
-          "query: " + queryStringObject,
-          "payload: " + payload
-        );
         app.client.request(
           undefined,
           path,
@@ -179,8 +170,6 @@ app.bindForms = function() {
           payload,
           function(statusCode, responsePayload) {
             // Display an error on the form if needed
-            console.log("response status code", statusCode);
-            console.log("payload from request", responsePayload);
             if (statusCode !== 200) {
               if (statusCode == 403) {
                 // log the user out
@@ -204,7 +193,6 @@ app.bindForms = function() {
               }
             } else {
               // If successful, send to form response processor
-              console.log("sending form", formId, payload, responsePayload);
               app.formResponseProcessor(formId, payload, responsePayload);
             }
           }
@@ -212,39 +200,6 @@ app.bindForms = function() {
       });
     }
   }
-};
-
-// Log the user out then redirect them
-app.logUserOut = function(redirectUser) {
-  // Set redirectUser to default to true
-  redirectUser = typeof redirectUser == "boolean" ? redirectUser : true;
-
-  // Get the current token id
-  var tokenId =
-    typeof app.config.sessionToken.id == "string"
-      ? app.config.sessionToken.id
-      : false;
-
-  // Send the current token to the tokens endpoint to delete it
-  var queryStringObject = {
-    id: tokenId
-  };
-  app.client.request(
-    undefined,
-    "api/tokens",
-    "DELETE",
-    queryStringObject,
-    undefined,
-    function(statusCode, responsePayload) {
-      // Set the app.config token as false
-      app.setSessionToken(false);
-
-      // Send the user to the logged out page
-      if (redirectUser) {
-        window.location = "/session/deleted";
-      }
-    }
-  );
 };
 
 // Get session token from local storage
@@ -288,7 +243,6 @@ app.setSessionToken = token => {
 
 // Form response processor
 app.formResponseProcessor = function(formId, requestPayload, responsePayload) {
-  console.log(formId, requestPayload, responsePayload);
   var functionToCall = false;
   // If account creation was successful, try to immediately log the user in
   if (formId == "accountCreate") {
@@ -307,7 +261,6 @@ app.formResponseProcessor = function(formId, requestPayload, responsePayload) {
       newPayload,
       function(newStatusCode, newResponsePayload) {
         // Display an error on the form if needed
-        console.log(newStatusCode, newResponsePayload);
         if (newStatusCode !== 200) {
           // Set the formError field with the error text
           document.querySelector("#" + formId + " .formError").innerHTML =
@@ -415,12 +368,10 @@ app.loadOrderPage = () => {
           const optionsDropDown = document.getElementById("pizzaType");
           let pizzaTypes = "";
           pizzas.forEach(pizza => {
-            console.log(pizza.item);
             pizzaTypes += `<option value="${pizza.item}">${
               pizza.item
             }</option>`;
           });
-          console.log(pizzaTypes);
           optionsDropDown.innerHTML = pizzaTypes;
         } else {
           app.logUserOut();
@@ -437,12 +388,11 @@ app.loadAccountEditPage = () => {
     typeof app.config.sessionToken.phone === "string"
       ? app.config.sessionToken.phone
       : false;
-  console.log("loading account edit page", phone);
   if (phone) {
     const queryStringObject = {
       phone: phone
     };
-
+    //@TODO add headers here (why don't the headers go in automatically?)
     app.client.request(
       undefined,
       "api/users",
@@ -534,6 +484,7 @@ app.bindLogoutButton = () => {
 
 // Log the user out then redirect them
 app.logUserOut = redirectUser => {
+  console.log("logging User Out");
   // Set redirectUser to default to true
   redirectUser = typeof redirectUser == "boolean" ? redirectUser : true;
 
@@ -574,7 +525,7 @@ app.renewToken = callback => {
   if (currentToken) {
     // Update the token with a new expiration
     var payload = {
-      id: currentToken.id,
+      id: currentToken.tokenId,
       extend: true
     };
     app.client.request(
@@ -587,7 +538,7 @@ app.renewToken = callback => {
         // Display an error on the form if needed
         if (statusCode == 200) {
           // Get the new token details
-          var queryStringObject = { id: currentToken.id };
+          var queryStringObject = { id: currentToken.tokenId };
           app.client.request(
             undefined,
             "api/tokens",

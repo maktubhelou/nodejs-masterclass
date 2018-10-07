@@ -48,3 +48,7 @@ This is an open-ended assignment. You may take any direction you'd like to go wi
 | notFound:               | 404-Not Found                                    |                                                                          |
 | sendEmailInvoice:       | send e-mail                                      |                                                                          |
 | verifyToken:            | verify user data                                 |                                                                          |
+
+# Learning Notes:
+
+- payload will be passed through a buffer
