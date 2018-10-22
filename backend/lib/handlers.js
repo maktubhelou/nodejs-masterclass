@@ -186,6 +186,34 @@ handlers.accountEdit = (data, callback) => {
     callback(405, undefined, "html");
   }
 };
+// Account Deleted
+handlers.accountDeleted = (data, callback) => {
+  if (data.method === "get") {
+    //Prepare data for interpolation.
+    const templateData = {
+      "head.title": "Account Deleted",
+      "body.class": "accountDeleted"
+    };
+
+    // Read in the template as a string
+    helpers.getTemplate("accountDeleted", templateData, (err, str) => {
+      if (!err && str) {
+        // Add the universal templates.
+        helpers.addUniversalTemplates(str, templateData, (err, fullString) => {
+          if (!err && fullString) {
+            callback(200, fullString, "html");
+          } else {
+            callback(500, undefined, "html");
+          }
+        });
+      } else {
+        callback(500, undefined, "html");
+      }
+    });
+  } else {
+    callback(405, undefined, "html");
+  }
+};
 // Place Order
 handlers.placeOrder = (data, callback) => {
   if (data.method === "get") {
@@ -198,6 +226,35 @@ handlers.placeOrder = (data, callback) => {
 
     // Read in the template as a string
     helpers.getTemplate("placeOrder", templateData, (err, str) => {
+      if (!err && str) {
+        // Add the universal templates.
+        helpers.addUniversalTemplates(str, templateData, (err, fullString) => {
+          if (!err && fullString) {
+            callback(200, fullString, "html");
+          } else {
+            callback(500, undefined, "html");
+          }
+        });
+      } else {
+        callback(500, undefined, "html");
+      }
+    });
+  } else {
+    callback(405, undefined, "html");
+  }
+};
+// View Cart
+handlers.viewCart = (data, callback) => {
+  if (data.method === "get") {
+    //Prepare data for interpolation.
+    const templateData = {
+      "head.title": "Review your Order",
+      "head.description": "See your current order here.",
+      "body.class": "viewCart"
+    };
+
+    // Read in the template as a string
+    helpers.getTemplate("viewCart", templateData, (err, str) => {
       if (!err && str) {
         // Add the universal templates.
         helpers.addUniversalTemplates(str, templateData, (err, fullString) => {
@@ -411,13 +468,14 @@ handlers._users.get = (data, callback) => {
   const phone = data.queryStringObject.phone;
   const token =
     typeof data.headers.token === "string" ? data.headers.token : false;
+  console.log(phone, token);
   handlers._tokens.verifyToken(token, phone, tokenIsValid => {
     if (tokenIsValid) {
       _data.read("users", phone, (err, data) => {
+        console.log(data);
         if (!err && data) {
-          const parsedData = helpers.parseJsonToObject(data);
-          delete parsedData.password;
-          callback(200, parsedData);
+          delete data.password;
+          callback(200, data);
         } else {
           callback(404, { Status: "Could not find user." });
         }
@@ -985,11 +1043,9 @@ handlers._carts = {};
 // Create a shopping cart
 // Required data: token
 handlers._carts.post = (data, callback) => {
-  console.log(data);
   const token =
     typeof data.headers.token === "string" ? data.headers.token : false;
-  const pizza =
-    typeof data.payload.pizza == "object" ? data.payload.pizza : false;
+  const pizza = typeof data.payload == "object" ? data.payload : false;
   _data.read("tokens", token, (err, tokenData) => {
     if (!err && tokenData) {
       const phone = tokenData.phone;

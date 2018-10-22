@@ -60,7 +60,6 @@ app.client.request = (
   }
 
   // If there is a current session token set, add that as a header
-  console.log("SessionToken Check", app.config.sessionToken);
   if (app.config.sessionToken) {
     xhr.setRequestHeader("token", app.config.sessionToken.tokenId);
   }
@@ -176,6 +175,7 @@ app.bindForms = function() {
                 app.logUserOut();
               } else {
                 // Try to get the error from the api, or set a default error message
+                console.log(responsePayload.Error);
                 var error =
                   typeof responsePayload.Error == "string"
                     ? responsePayload.Error
@@ -307,7 +307,7 @@ app.formResponseProcessor = function(formId, requestPayload, responsePayload) {
   }
 
   if (formId === "placeOrder") {
-    window.location = "/menu/view";
+    window.location = "/carts/view";
   }
 };
 
@@ -347,6 +347,10 @@ app.loadDataOnPage = () => {
   if (primaryClass == "accountEdit") {
     app.loadAccountEditPage();
   }
+
+  if (primaryClass == "viewCart") {
+    app.loadCurrentCartPage();
+  }
 };
 
 app.loadOrderPage = () => {
@@ -382,12 +386,66 @@ app.loadOrderPage = () => {
     app.logUserOut();
   }
 };
+app.loadCurrentCartPage = () => {
+  const phone =
+    typeof app.config.sessionToken.phone === "string"
+      ? app.config.sessionToken.phone
+      : false;
+  if (phone) {
+    app.client.request(
+      undefined,
+      "api/carts",
+      "GET",
+      undefined,
+      undefined,
+      (statusCode, data) => {
+        if (statusCode === 200) {
+          const cartData = data;
+          console.log(cartData);
+          const {
+            firstName,
+            lastName,
+            phone,
+            streetAddress
+          } = cartData.customerDetails;
+          const { items, total } = cartData.data;
+          const customerDetailsTable = document.getElementById(
+            "customerDetails"
+          );
+          const orderDetailsTable = document.getElementById("orderDetails");
+          const orderTotal = document.getElementById("orderTotal");
+          const tr1 = customerDetailsTable.insertRow();
+          const nameCell = tr1.insertCell(0);
+          const phoneCell = tr1.insertCell(1);
+          const addressCell = tr1.insertCell(2);
+          nameCell.innerHTML = `${firstName} ${lastName}`;
+          phoneCell.innerHTML = phone;
+          addressCell.innerHTML = streetAddress;
+          items.forEach(item => {
+            const itemRow = orderDetailsTable.insertRow();
+            const itemCell = itemRow.insertCell(0);
+            const sizeCell = itemRow.insertCell(1);
+            itemCell.innerHTML = item.type;
+            sizeCell.innerHTML = item.size;
+            // use forEch on items
+          });
+          orderTotal.innerHTML = `$${total.toFixed(2)}`;
+        } else {
+          app.logUserOut();
+        }
+      }
+    );
+  } else {
+    app.logUserOut();
+  }
+};
 
 app.loadAccountEditPage = () => {
   const phone =
     typeof app.config.sessionToken.phone === "string"
       ? app.config.sessionToken.phone
       : false;
+  console.log(phone);
   if (phone) {
     const queryStringObject = {
       phone: phone
@@ -400,6 +458,7 @@ app.loadAccountEditPage = () => {
       queryStringObject,
       undefined,
       (statusCode, responsePayload) => {
+        console.log(responsePayload);
         if (statusCode === 200) {
           document.querySelector("#accountEdit1 .firstNameInput").value =
             responsePayload.firstName;
@@ -484,7 +543,6 @@ app.bindLogoutButton = () => {
 
 // Log the user out then redirect them
 app.logUserOut = redirectUser => {
-  console.log("logging User Out");
   // Set redirectUser to default to true
   redirectUser = typeof redirectUser == "boolean" ? redirectUser : true;
 
