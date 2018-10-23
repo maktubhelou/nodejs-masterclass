@@ -90,7 +90,7 @@ lib.update = (dir, file, data, callback) => {
               if (!err) {
                 fs.close(fileDescriptor, err => {
                   if (!err) {
-                    callback(false);
+                    callback();
                   } else {
                     callback(500, { Status: "Error closing file." });
                   }

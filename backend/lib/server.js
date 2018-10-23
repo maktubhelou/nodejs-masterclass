@@ -165,6 +165,7 @@ server.router = {
   "session/deleted": handlers.sessionDeleted,
   "menu/view": handlers.viewMenu,
   "carts/all": handlers.cartsList,
+  "carts/add": handlers.addToOrder,
   "carts/view": handlers.viewCart,
   "carts/create": handlers.placeOrder,
   "carts/edit": handlers.cartsEdit,

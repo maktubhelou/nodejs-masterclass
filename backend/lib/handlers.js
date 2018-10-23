@@ -243,6 +243,35 @@ handlers.placeOrder = (data, callback) => {
     callback(405, undefined, "html");
   }
 };
+// Add to Order
+handlers.addToOrder = (data, callback) => {
+  if (data.method === "get") {
+    //Prepare data for interpolation.
+    const templateData = {
+      "head.title": "Add to Your Oder",
+      "head.description": "Add to an Order Order here.",
+      "body.class": "addToOrder"
+    };
+
+    // Read in the template as a string
+    helpers.getTemplate("addToOrder", templateData, (err, str) => {
+      if (!err && str) {
+        // Add the universal templates.
+        helpers.addUniversalTemplates(str, templateData, (err, fullString) => {
+          if (!err && fullString) {
+            callback(200, fullString, "html");
+          } else {
+            callback(500, undefined, "html");
+          }
+        });
+      } else {
+        callback(500, undefined, "html");
+      }
+    });
+  } else {
+    callback(405, undefined, "html");
+  }
+};
 // View Cart
 handlers.viewCart = (data, callback) => {
   if (data.method === "get") {
@@ -1043,6 +1072,7 @@ handlers._carts = {};
 // Create a shopping cart
 // Required data: token
 handlers._carts.post = (data, callback) => {
+  console.log("post called");
   const token =
     typeof data.headers.token === "string" ? data.headers.token : false;
   const pizza = typeof data.payload == "object" ? data.payload : false;
@@ -1060,11 +1090,12 @@ handlers._carts.post = (data, callback) => {
           customerDetails.lastName = userData.lastName;
           let addedPizza = {};
           if (pizza) {
-            addedPizza = new Pizza(pizza.type, pizza.size, pizza.addedToppings);
+            addedPizza = new Pizza(pizza.type, pizza.size, null, pizza.qty);
           }
           const shoppingCart = new ShoppingCart();
           shoppingCart.addCustomerDetails(customerDetails);
           shoppingCart.addToCart(addedPizza);
+
           shoppingCart.calculateTotals();
           _data.create("carts", phone, shoppingCart, err => {
             if (!err) {
@@ -1113,24 +1144,40 @@ handlers._carts.get = (data, callback) => {
 
 // Update a shopping cart
 handlers._carts.put = (data, callback) => {
+  console.log("put called", "data payload", data);
   const token =
     typeof data.headers.token === "string" ? data.headers.token : false;
-  const pizza =
-    typeof data.payload.pizza == "object" ? data.payload.pizza : false;
+  const pizza = typeof data.payload == "object" ? data.payload : false;
   _data.read("tokens", token, (err, tokenData) => {
     if (!err && tokenData) {
       const phone = tokenData.phone;
       _data.read("carts", phone, (err, cartData) => {
         if (!err && cartData) {
           const shoppingCart = new ShoppingCart();
-          shoppingCart.data = cartData.data;
           shoppingCart.customerDetails = cartData.customerDetails;
+          const { items } = cartData.data;
+          console.log(items);
+          items.forEach(item =>
+            shoppingCart.addToCart(
+              new Pizza(item.type, item.size, null, item.qty)
+            )
+          );
           let addedPizza = {};
           if (pizza) {
-            addedPizza = new Pizza(pizza.type, pizza.size, pizza.addedToppings);
+            addedPizza = new Pizza(pizza.type, pizza.size, null, pizza.qty);
           }
           shoppingCart.addToCart(addedPizza);
           shoppingCart.calculateTotals();
+          console.log(shoppingCart);
+          _data.update("carts", phone, shoppingCart, err => {
+            if (!err) {
+              console.log("success");
+            } else {
+              callback(500, {
+                Error: "Something went wrong creating cart."
+              });
+            }
+          });
           _data.update("carts", phone, shoppingCart, err => {
             if (!err) {
               callback(200, shoppingCart);

@@ -19,12 +19,21 @@ class ShoppingCart {
     this.customerDetails = detailObject;
   }
 
-  cartHasItem(pizzaObj) {
-    return this.data.items.includes(pizzaObj);
-  }
-
   addToCart(pizzaObj) {
-    this.data.items.push(pizzaObj);
+    let indexOfMatch = false;
+    this.data.items.forEach((item, index) => {
+      if (item.type == pizzaObj.type && item.size == pizzaObj.size) {
+        indexOfMatch = index;
+        return;
+      }
+    });
+    console.log(indexOfMatch);
+    if (indexOfMatch) {
+      this.data.items[indexOfMatch].qty += 1;
+    }
+    if (!indexOfMatch) {
+      this.data.items.push(pizzaObj);
+    }
   }
 
   // @TODO add removeItems method
@@ -57,3 +66,27 @@ class ShoppingCart {
 }
 
 module.exports = ShoppingCart;
+
+// const newCart = new ShoppingCart();
+// newCart.addCustomerDetails({
+//   name: "Mark",
+//   phone: "0938396003",
+//   email: "markallanevans@gmail.com"
+// });
+
+// newCart.addToCart({ type: "pep", size: "sm", qty: 1 });
+// newCart.addToCart({ type: "moz", size: "med", qty: 1 });
+// newCart.addToCart({ type: "moz", size: "med", qty: 1 });
+// newCart.addToCart({ type: "moz", size: "med", qty: 1 });
+// newCart.addToCart({ type: "moz", size: "lg", qty: 1 });
+// newCart.addToCart({ type: "moz", size: "med", qty: 1 });
+// newCart.addToCart({ type: "moz", size: "med", qty: 1 });
+// newCart.addToCart({ type: "moz", size: "med", qty: 1 });
+// newCart.addToCart({ type: "haw", size: "sm", qty: 3 });
+// newCart.addToCart({ type: "veg", size: "lg", qty: 2 });
+// newCart.addToCart({ type: "chk", size: "sm", qty: 1 });
+// newCart.addToCart({ type: "buf", size: "sm", qty: 1 });
+
+// newCart.calculateTotals();
+
+// console.log(newCart.data.items);

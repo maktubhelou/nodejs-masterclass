@@ -1,0 +1,22 @@
+{
+  "data": {
+    "invoiceId": "Invoice-1540273970932",
+    "items": [
+      { "type": "Pepperoni", "size": "sm", "addedToppings": null, "qty": 1 },
+      { "type": "Pepperoni", "size": "sm", "addedToppings": null, "qty": 6 }
+    ],
+    "subTotal": 16,
+    "tax": 2.4,
+    "total": 18.4,
+    "stripeTotal": 1840,
+    "sizeTally": { "sm": 2, "med": 0, "lg": 0 },
+    "invoiceTotal": 18.4
+  },
+  "customerDetails": {
+    "phone": "0990990999",
+    "email": "markallanevans@gmail.com",
+    "streetAddress": "188 BF3 NGUYEN VAN HUONG, APT #204",
+    "firstName": "MARK",
+    "lastName": "EVANS"
+  }
+}

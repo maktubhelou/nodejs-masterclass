@@ -17,6 +17,7 @@ app.client.request = (
   payload,
   callback
 ) => {
+  console.log("app request", headers, path, method, queryStringObject, payload);
   // Set the defaults
   headers = typeof headers === "object" && headers !== null ? headers : {};
   path = typeof path === "string" ? path : "/";
@@ -64,7 +65,7 @@ app.client.request = (
     xhr.setRequestHeader("token", app.config.sessionToken.tokenId);
   }
 
-  // When the request comes back, handl the response
+  // When the request comes back, handle the response
   xhr.onreadystatechange = () => {
     if (xhr.readyState === XMLHttpRequest.DONE) {
       let statusCode = xhr.status;
@@ -98,6 +99,7 @@ app.bindForms = function() {
         var formId = this.id;
         var path = this.action;
         var method = this.method.toUpperCase();
+        console.log("form method", method);
 
         // Hide the error message (if it's currently shown due to a previous error)
         document.querySelector("#" + formId + " .formError").style.display =
@@ -210,11 +212,11 @@ app.getSessionToken = () => {
       const token = JSON.parse(tokenString);
       app.config.sessionToken = token;
       if (typeof token === "object") {
-        app.setLoggedInClass = true;
+        app.setLoggedInClass(true);
       }
     } catch (e) {
       app.config.sessionToken = false;
-      app.setLoggedInClass = false;
+      app.setLoggedInClass(false);
     }
   }
 };
@@ -235,9 +237,9 @@ app.setSessionToken = token => {
   const tokenString = JSON.stringify(token);
   localStorage.setItem("token", tokenString);
   if (typeof token === "object") {
-    app.setLoggedInClass = true;
+    app.setLoggedInClass(true);
   } else {
-    app.setLoggedInClass = false;
+    app.setLoggedInClass(false);
   }
 };
 
@@ -307,7 +309,10 @@ app.formResponseProcessor = function(formId, requestPayload, responsePayload) {
   }
 
   if (formId === "placeOrder") {
-    window.location = "/carts/view";
+    window.location = "/carts/add";
+  }
+  if (formId === "addToOrder") {
+    window.location = "/carts/add";
   }
 };
 
@@ -340,7 +345,11 @@ app.loadDataOnPage = () => {
     app.loadMenuPage();
   }
 
-  if (primaryClass == "placeOrder") {
+  if (primaryClass == "cartsList") {
+    app.loadShoppingCart();
+  }
+
+  if (primaryClass == "placeOrder" || primaryClass == "addToOrder") {
     app.loadOrderPage();
   }
 
@@ -348,7 +357,7 @@ app.loadDataOnPage = () => {
     app.loadAccountEditPage();
   }
 
-  if (primaryClass == "viewCart") {
+  if (primaryClass == "viewCart" || primaryClass == "addToOrder") {
     app.loadCurrentCartPage();
   }
 };
@@ -401,7 +410,6 @@ app.loadCurrentCartPage = () => {
       (statusCode, data) => {
         if (statusCode === 200) {
           const cartData = data;
-          console.log(cartData);
           const {
             firstName,
             lastName,
@@ -428,6 +436,66 @@ app.loadCurrentCartPage = () => {
             itemCell.innerHTML = item.type;
             sizeCell.innerHTML = item.size;
             // use forEch on items
+          });
+          orderTotal.innerHTML = `$${total.toFixed(2)}`;
+        } else {
+          app.logUserOut();
+        }
+      }
+    );
+  } else {
+    app.logUserOut();
+  }
+};
+
+app.loadShoppingCart = () => {
+  const phone =
+    typeof app.config.sessionToken.phone === "string"
+      ? app.config.sessionToken.phone
+      : false;
+  let menu = {};
+  app.client.request(
+    undefined,
+    "api/menu",
+    "GET",
+    undefined,
+    undefined,
+    (statusCode, data) => {
+      if (statusCode === 200) {
+        menu = data;
+        return menu;
+      }
+    }
+  );
+  if (phone) {
+    app.client.request(
+      undefined,
+      "api/carts",
+      "GET",
+      undefined,
+      undefined,
+      (statusCode, data) => {
+        if (statusCode === 200 || statusCode === 400) {
+          if (statusCode === 400) {
+            console.log("Cart is empty");
+            return;
+          }
+          const cartData = data;
+          const { items, total } = cartData.data;
+          const shoppingCartTable = document.getElementById(
+            "shoppingCartTable"
+          );
+          const tr1 = shoppingCartTable.insertRow();
+          items.forEach((item, index) => {
+            const itemRow = shoppingCartTable.insertRow();
+            const itemCell = itemRow.insertCell(0);
+            const sizeCell = itemRow.insertCell(1);
+            const toppingCell = itemRow.insertCell(2);
+
+            itemCell.innerHTML = item.type;
+            sizeCell.innerHTML = item.size;
+            toppingCell.innerHTML =
+              menu.pizzas[index].toppings.join(", ") + ".";
           });
           orderTotal.innerHTML = `$${total.toFixed(2)}`;
         } else {

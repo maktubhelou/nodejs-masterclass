@@ -1,7 +1,9 @@
-<h1>Place an Order Here</h1>
+<h1>Add to Your Order Here</h1>
 
 <div class="formWrapper">
-  <form action="/api/carts" method="POST" id="placeOrder">
+  <form action="/api/carts" id="addToOrder" method="PUT">
+    <input type="hidden" name="_method" value="PUT" />
+
     <div class="formError"></div>
 
     <div class="inputWrapper">
@@ -23,4 +25,22 @@
     </div>
     <input type="submit" class="cta primary" value="Add">
   </form>
+
+  <h1>Current Shopping Cart</h1>
+
+  <table id="customerDetails">
+    <th>Name on Order
+    </th>
+    <th>Phone</th>
+    <th>Address</th>
+  </table>
+
+  <table id="orderDetails">
+    <th>Item</th>
+    <th>Size</th>
+    <th>Quantity</th>
+  </table>
+
+  <h1>Order Total</h1>
+  <h2 id="orderTotal"></h2>
 </div>
