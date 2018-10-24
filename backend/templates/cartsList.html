@@ -6,9 +6,7 @@
   <tr>
     <th>Pizza Type</th>
     <th>Size</th>
-    <th>Topings</th>
     <th>Quantity</th>
-    <th>Price</th>
   </tr>
   <tr id="noCartsMessage">
     <td colspan="5">You have no carts open, please create one!</td>
@@ -16,6 +14,29 @@
 
 </table>
 
-<div id="createCheckCTA" class="ctaWrapper">
-  <a class="cta green" href="carts/create">Create a Check</a>
+<table id="customerDetails">
+  <th>Name on Order
+  </th>
+  <th>Phone</th>
+  <th>Address</th>
+</table>
+<table id="orderDetails">
+  <th>Subtotal
+  </th>
+  <th>Tax</th>
+  <th>Total</th>
+</table>
+
+<div id="createOrderCta" class="ctaWrapper">
+  <a class="cta primary" href="carts/create">Place an Order</a>
+</div>
+
+<div id="addToOrderCta" class="ctaWrapper">
+  <a class="cta primary" href="carts/add">Add to Order</a>
+</div>
+<div id="checkoutCta" class="ctaWrapper">
+  <a class="cta primary" href="orders/view">Checkout</a>
+</div>
+<div id="cancelOrderCta" class="ctaWrapper">
+  <a class="cta secondary" href="carts/delete">Cancel Order</a>
 </div>

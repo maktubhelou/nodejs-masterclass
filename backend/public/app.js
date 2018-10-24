@@ -17,7 +17,6 @@ app.client.request = (
   payload,
   callback
 ) => {
-  console.log("app request", headers, path, method, queryStringObject, payload);
   // Set the defaults
   headers = typeof headers === "object" && headers !== null ? headers : {};
   path = typeof path === "string" ? path : "/";
@@ -77,7 +76,7 @@ app.client.request = (
           let parsedResponse = JSON.parse(responseReturned);
           callback(statusCode, parsedResponse);
         } catch (err) {
-          callback(statusCode, false);
+          callback(statusCode, err);
         }
       }
     }
@@ -99,7 +98,6 @@ app.bindForms = function() {
         var formId = this.id;
         var path = this.action;
         var method = this.method.toUpperCase();
-        console.log("form method", method);
 
         // Hide the error message (if it's currently shown due to a previous error)
         document.querySelector("#" + formId + " .formError").style.display =
@@ -177,7 +175,6 @@ app.bindForms = function() {
                 app.logUserOut();
               } else {
                 // Try to get the error from the api, or set a default error message
-                console.log(responsePayload.Error);
                 var error =
                   typeof responsePayload.Error == "string"
                     ? responsePayload.Error
@@ -347,6 +344,11 @@ app.loadDataOnPage = () => {
 
   if (primaryClass == "cartsList") {
     app.loadShoppingCart();
+    app.loadCustomerDetails();
+  }
+  if (primaryClass == "checkout") {
+    app.loadCheckoutPage();
+    app.loadCustomerDetails();
   }
 
   if (primaryClass == "placeOrder" || primaryClass == "addToOrder") {
@@ -359,6 +361,34 @@ app.loadDataOnPage = () => {
 
   if (primaryClass == "viewCart" || primaryClass == "addToOrder") {
     app.loadCurrentCartPage();
+  }
+  if (primaryClass == "deleteCart") {
+    app.deleteCurrentUserCart();
+  }
+};
+
+app.deleteCurrentUserCart = () => {
+  const phone =
+    typeof app.config.sessionToken.phone === "string"
+      ? app.config.sessionToken.phone
+      : false;
+  if (phone) {
+    app.client.request(
+      undefined,
+      "api/carts",
+      "DELETE",
+      { phone },
+      undefined,
+      statusCode => {
+        if (statusCode === 200) {
+          callback(200);
+        } else {
+          app.logUserOut();
+        }
+      }
+    );
+  } else {
+    app.logUserOut();
   }
 };
 
@@ -409,35 +439,54 @@ app.loadCurrentCartPage = () => {
       undefined,
       (statusCode, data) => {
         if (statusCode === 200) {
-          const cartData = data;
-          const {
-            firstName,
-            lastName,
-            phone,
-            streetAddress
-          } = cartData.customerDetails;
-          const { items, total } = cartData.data;
+          const orderDetailsTable = document.getElementById("orderDetails");
+          const orderTotal = document.getElementById("orderTotal");
+          const tr1 = customerDetailsTable.insertRow();
+          console.log(data);
+          data.forEach(item => {
+            const itemRow = orderDetailsTable.insertRow();
+            const itemCell = itemRow.insertCell(0);
+            const sizeCell = itemRow.insertCell(1);
+            const qtyCell = itemRow.insertCell(2);
+            itemCell.innerHTML = item.type;
+            sizeCell.innerHTML = item.size;
+            qtyCell.innerHTML = item.qty;
+          });
+          orderTotal.innerHTML = `$${total.toFixed(2)}`;
+        } else {
+          app.logUserOut();
+        }
+      }
+    );
+  } else {
+    app.logUserOut();
+  }
+};
+
+app.loadCustomerDetails = () => {
+  const phone =
+    typeof app.config.sessionToken.phone === "string"
+      ? app.config.sessionToken.phone
+      : false;
+  if (phone) {
+    app.client.request(
+      undefined,
+      "api/users",
+      "GET",
+      { phone },
+      undefined,
+      (statusCode, userData) => {
+        if (statusCode === 200) {
           const customerDetailsTable = document.getElementById(
             "customerDetails"
           );
-          const orderDetailsTable = document.getElementById("orderDetails");
-          const orderTotal = document.getElementById("orderTotal");
           const tr1 = customerDetailsTable.insertRow();
           const nameCell = tr1.insertCell(0);
           const phoneCell = tr1.insertCell(1);
           const addressCell = tr1.insertCell(2);
-          nameCell.innerHTML = `${firstName} ${lastName}`;
-          phoneCell.innerHTML = phone;
-          addressCell.innerHTML = streetAddress;
-          items.forEach(item => {
-            const itemRow = orderDetailsTable.insertRow();
-            const itemCell = itemRow.insertCell(0);
-            const sizeCell = itemRow.insertCell(1);
-            itemCell.innerHTML = item.type;
-            sizeCell.innerHTML = item.size;
-            // use forEch on items
-          });
-          orderTotal.innerHTML = `$${total.toFixed(2)}`;
+          nameCell.innerHTML = `${userData.firstName} ${userData.lastName}`;
+          phoneCell.innerHTML = userData.phone;
+          addressCell.innerHTML = userData.streetAddress;
         } else {
           app.logUserOut();
         }
@@ -453,20 +502,6 @@ app.loadShoppingCart = () => {
     typeof app.config.sessionToken.phone === "string"
       ? app.config.sessionToken.phone
       : false;
-  let menu = {};
-  app.client.request(
-    undefined,
-    "api/menu",
-    "GET",
-    undefined,
-    undefined,
-    (statusCode, data) => {
-      if (statusCode === 200) {
-        menu = data;
-        return menu;
-      }
-    }
-  );
   if (phone) {
     app.client.request(
       undefined,
@@ -476,28 +511,76 @@ app.loadShoppingCart = () => {
       undefined,
       (statusCode, data) => {
         if (statusCode === 200 || statusCode === 400) {
-          if (statusCode === 400) {
-            console.log("Cart is empty");
-            return;
-          }
-          const cartData = data;
-          const { items, total } = cartData.data;
+          console.log(data);
+          const { items, formattedTotals } = data.data;
           const shoppingCartTable = document.getElementById(
             "shoppingCartTable"
           );
-          const tr1 = shoppingCartTable.insertRow();
-          items.forEach((item, index) => {
+          const noCartsMessage = document.getElementById("noCartsMessage");
+          const newOrderButton = document.getElementById("createOrderCta");
+          if (items && items.length > 0) {
+            noCartsMessage.style.display = "none";
+            newOrderButton.style.display = "none";
+          }
+          items.forEach(item => {
             const itemRow = shoppingCartTable.insertRow();
             const itemCell = itemRow.insertCell(0);
             const sizeCell = itemRow.insertCell(1);
-            const toppingCell = itemRow.insertCell(2);
+            const qtyCell = itemRow.insertCell(2);
 
             itemCell.innerHTML = item.type;
             sizeCell.innerHTML = item.size;
-            toppingCell.innerHTML =
-              menu.pizzas[index].toppings.join(", ") + ".";
+            qtyCell.innerHTML = item.qty;
           });
-          orderTotal.innerHTML = `$${total.toFixed(2)}`;
+
+          const orderDetailsTable = document.getElementById("orderDetails");
+          const totalsRow = orderDetailsTable.insertRow();
+          const subTotalCell = totalsRow.insertCell(0);
+          const taxCell = totalsRow.insertCell(1);
+          const totalCell = totalsRow.insertCell(2);
+
+          subTotalCell.innerHTML = formattedTotals.subTotal;
+          taxCell.innerHTML = formattedTotals.tax;
+          totalCell.innerHTML = formattedTotals.invoiceTotal;
+        } else {
+          app.logUserOut();
+        }
+      }
+    );
+  } else {
+    app.logUserOut();
+  }
+};
+app.loadCheckoutPage = () => {
+  const phone =
+    typeof app.config.sessionToken.phone === "string"
+      ? app.config.sessionToken.phone
+      : false;
+  if (phone) {
+    app.client.request(
+      undefined,
+      "api/carts",
+      "GET",
+      undefined,
+      undefined,
+      (statusCode, data) => {
+        if (statusCode === 200 || statusCode === 400) {
+          console.log(data);
+          const { items, formattedTotals } = data.data;
+          const orderItems = document.getElementById("orderItems");
+          items.forEach(item => {
+            const itemRow = orderItems.insertRow();
+            const itemCell = itemRow.insertCell(0);
+            const sizeCell = itemRow.insertCell(1);
+            const qtyCell = itemRow.insertCell(2);
+
+            itemCell.innerHTML = item.type;
+            sizeCell.innerHTML = item.size;
+            qtyCell.innerHTML = item.qty;
+          });
+
+          const orderTotal = document.getElementById("orderTotal");
+          orderTotal.innerHTML = formattedTotals.invoiceTotal;
         } else {
           app.logUserOut();
         }
@@ -513,7 +596,6 @@ app.loadAccountEditPage = () => {
     typeof app.config.sessionToken.phone === "string"
       ? app.config.sessionToken.phone
       : false;
-  console.log(phone);
   if (phone) {
     const queryStringObject = {
       phone: phone

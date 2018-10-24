@@ -27,7 +27,6 @@ class ShoppingCart {
         return;
       }
     });
-    console.log(indexOfMatch);
     if (indexOfMatch) {
       this.data.items[indexOfMatch].qty += 1;
     }
@@ -62,31 +61,12 @@ class ShoppingCart {
     this.data.total = this.data.subTotal + this.data.tax;
     this.data.invoiceTotal = Math.ceil(this.data.total * 100) / 100;
     this.data.stripeTotal = Math.ceil(this.data.total * 100);
+    this.data.formattedTotals = {
+      subTotal: this.data.subTotal.toFixed(2) + " $",
+      tax: this.data.tax.toFixed(2) + " $",
+      invoiceTotal: this.data.total.toFixed(2) + " $"
+    };
   }
 }
 
 module.exports = ShoppingCart;
-
-// const newCart = new ShoppingCart();
-// newCart.addCustomerDetails({
-//   name: "Mark",
-//   phone: "0938396003",
-//   email: "markallanevans@gmail.com"
-// });
-
-// newCart.addToCart({ type: "pep", size: "sm", qty: 1 });
-// newCart.addToCart({ type: "moz", size: "med", qty: 1 });
-// newCart.addToCart({ type: "moz", size: "med", qty: 1 });
-// newCart.addToCart({ type: "moz", size: "med", qty: 1 });
-// newCart.addToCart({ type: "moz", size: "lg", qty: 1 });
-// newCart.addToCart({ type: "moz", size: "med", qty: 1 });
-// newCart.addToCart({ type: "moz", size: "med", qty: 1 });
-// newCart.addToCart({ type: "moz", size: "med", qty: 1 });
-// newCart.addToCart({ type: "haw", size: "sm", qty: 3 });
-// newCart.addToCart({ type: "veg", size: "lg", qty: 2 });
-// newCart.addToCart({ type: "chk", size: "sm", qty: 1 });
-// newCart.addToCart({ type: "buf", size: "sm", qty: 1 });
-
-// newCart.calculateTotals();
-
-// console.log(newCart.data.items);

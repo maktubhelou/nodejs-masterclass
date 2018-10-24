@@ -186,6 +186,34 @@ handlers.accountEdit = (data, callback) => {
     callback(405, undefined, "html");
   }
 };
+// Cart Deleted
+handlers.deleteCart = (data, callback) => {
+  if (data.method === "get") {
+    //Prepare data for interpolation.
+    const templateData = {
+      "head.title": "Cart Deleted",
+      "body.class": "deleteCart"
+    };
+
+    // Read in the template as a string
+    helpers.getTemplate("deleteCart", templateData, (err, str) => {
+      if (!err && str) {
+        // Add the universal templates.
+        helpers.addUniversalTemplates(str, templateData, (err, fullString) => {
+          if (!err && fullString) {
+            callback(200, fullString, "html");
+          } else {
+            callback(500, undefined, "html");
+          }
+        });
+      } else {
+        callback(500, undefined, "html");
+      }
+    });
+  } else {
+    callback(405, undefined, "html");
+  }
+};
 // Account Deleted
 handlers.accountDeleted = (data, callback) => {
   if (data.method === "get") {
@@ -226,6 +254,34 @@ handlers.placeOrder = (data, callback) => {
 
     // Read in the template as a string
     helpers.getTemplate("placeOrder", templateData, (err, str) => {
+      if (!err && str) {
+        // Add the universal templates.
+        helpers.addUniversalTemplates(str, templateData, (err, fullString) => {
+          if (!err && fullString) {
+            callback(200, fullString, "html");
+          } else {
+            callback(500, undefined, "html");
+          }
+        });
+      } else {
+        callback(500, undefined, "html");
+      }
+    });
+  } else {
+    callback(405, undefined, "html");
+  }
+};
+handlers.checkout = (data, callback) => {
+  if (data.method === "get") {
+    //Prepare data for interpolation.
+    const templateData = {
+      "head.title": "Review your order",
+      "head.description": "Review your order and pay.",
+      "body.class": "checkout"
+    };
+
+    // Read in the template as a string
+    helpers.getTemplate("checkout", templateData, (err, str) => {
       if (!err && str) {
         // Add the universal templates.
         helpers.addUniversalTemplates(str, templateData, (err, fullString) => {
@@ -497,11 +553,9 @@ handlers._users.get = (data, callback) => {
   const phone = data.queryStringObject.phone;
   const token =
     typeof data.headers.token === "string" ? data.headers.token : false;
-  console.log(phone, token);
   handlers._tokens.verifyToken(token, phone, tokenIsValid => {
     if (tokenIsValid) {
       _data.read("users", phone, (err, data) => {
-        console.log(data);
         if (!err && data) {
           delete data.password;
           callback(200, data);
@@ -1072,35 +1126,24 @@ handlers._carts = {};
 // Create a shopping cart
 // Required data: token
 handlers._carts.post = (data, callback) => {
-  console.log("post called");
   const token =
     typeof data.headers.token === "string" ? data.headers.token : false;
   const pizza = typeof data.payload == "object" ? data.payload : false;
+  pizza.qty = parseInt(pizza.qty);
   _data.read("tokens", token, (err, tokenData) => {
     if (!err && tokenData) {
       const phone = tokenData.phone;
-      const customerDetails = {
-        phone
-      };
+      const items = [];
+      items.push(pizza);
+      const cart = new ShoppingCart();
+      cart.data.items = items;
+      cart.calculateTotals();
       _data.read("users", phone, (err, userData) => {
         if (!err && userData) {
-          customerDetails.email = userData.email;
-          customerDetails.streetAddress = userData.streetAddress;
-          customerDetails.firstName = userData.firstName;
-          customerDetails.lastName = userData.lastName;
-          let addedPizza = {};
-          if (pizza) {
-            addedPizza = new Pizza(pizza.type, pizza.size, null, pizza.qty);
-          }
-          const shoppingCart = new ShoppingCart();
-          shoppingCart.addCustomerDetails(customerDetails);
-          shoppingCart.addToCart(addedPizza);
-
-          shoppingCart.calculateTotals();
-          _data.create("carts", phone, shoppingCart, err => {
-            if (!err) {
-              callback(200, shoppingCart);
-            } else {
+          delete userData.password;
+          cart.addCustomerDetails(userData);
+          _data.create("carts", phone + ".items", items, err => {
+            if (err) {
               callback(500, {
                 Error: `Could not create cart, or cart already exists. Use PUT Method to update order ID# ${
                   shoppingCart.data.invoiceId
@@ -1108,6 +1151,16 @@ handlers._carts.post = (data, callback) => {
               });
             }
           });
+          _data.create("carts", phone + ".cart", cart, err => {
+            if (err) {
+              callback(500, {
+                Error: `Could not create cart, or cart already exists. Use PUT Method to update order ID# ${
+                  shoppingCart.data.invoiceId
+                }.`
+              });
+            }
+          });
+          callback(200);
         } else {
           callback(500);
         }
@@ -1126,7 +1179,8 @@ handlers._carts.get = (data, callback) => {
     _data.read("tokens", token, (err, tokenData) => {
       if (!err && tokenData) {
         const phone = tokenData.phone;
-        _data.read("carts", phone, (err, cartData) => {
+        _data.read("carts", phone + ".cart", (err, cartData) => {
+          console.log(cartData);
           if (!err && cartData) {
             callback(false, cartData);
           } else {
@@ -1144,53 +1198,57 @@ handlers._carts.get = (data, callback) => {
 
 // Update a shopping cart
 handlers._carts.put = (data, callback) => {
-  console.log("put called", "data payload", data);
   const token =
     typeof data.headers.token === "string" ? data.headers.token : false;
   const pizza = typeof data.payload == "object" ? data.payload : false;
+  pizza.qty = parseInt(pizza.qty);
   _data.read("tokens", token, (err, tokenData) => {
     if (!err && tokenData) {
       const phone = tokenData.phone;
-      _data.read("carts", phone, (err, cartData) => {
+      // Read from the items to go in cart (.items)file
+      _data.read("carts", phone + ".cart", (err, cartData) => {
         if (!err && cartData) {
-          const shoppingCart = new ShoppingCart();
-          shoppingCart.customerDetails = cartData.customerDetails;
+          console.log("cartDAta", cartData);
           const { items } = cartData.data;
-          console.log(items);
-          items.forEach(item =>
-            shoppingCart.addToCart(
-              new Pizza(item.type, item.size, null, item.qty)
-            )
-          );
-          let addedPizza = {};
-          if (pizza) {
-            addedPizza = new Pizza(pizza.type, pizza.size, null, pizza.qty);
-          }
-          shoppingCart.addToCart(addedPizza);
-          shoppingCart.calculateTotals();
-          console.log(shoppingCart);
-          _data.update("carts", phone, shoppingCart, err => {
-            if (!err) {
-              console.log("success");
-            } else {
-              callback(500, {
-                Error: "Something went wrong creating cart."
-              });
+          pizzaFound = false;
+          items.forEach(item => {
+            if (item.type === pizza.type && item.size === pizza.size) {
+              item.qty += pizza.qty;
+              pizzaFound = true;
+              return;
             }
           });
-          _data.update("carts", phone, shoppingCart, err => {
-            if (!err) {
-              callback(200, shoppingCart);
-            } else {
-              callback(500, {
-                Error: `Could not create cart, or cart already exists. Use PUT Method to update order ID# ${
-                  shoppingCart.data.invoiceId
-                }.`
+          if (!pizzaFound) {
+            items.push(pizza);
+          }
+          const cart = new ShoppingCart();
+          cart.data.items = items;
+          _data.read("users", phone, async (err, userData) => {
+            if (!err && userData) {
+              delete userData.password;
+              cart.addCustomerDetails(userData);
+              cart.calculateTotals();
+              _data.update("carts", phone + ".items", items, err => {
+                if (err) {
+                  callback(500, {
+                    Error: "Something went wrong creating cart."
+                  });
+                }
               });
+              _data.update("carts", phone + ".cart", cart, err => {
+                if (err) {
+                  callback(500, {
+                    Error: "Something went wrong creating cart."
+                  });
+                }
+              });
+              callback(200);
+            } else {
+              callback(500);
             }
           });
         } else {
-          callback(500);
+          callback(500, "error");
         }
       });
     } else {
@@ -1207,9 +1265,15 @@ handlers._carts.delete = (data, callback) => {
     _data.read("tokens", token, (err, tokenData) => {
       if (!err && tokenData) {
         const phone = tokenData.phone;
-        _data.delete("carts", phone, err => {
+        _data.delete("carts", phone + ".cart", err => {
           if (!err) {
-            callback(200, { Status: "the order has been deleted." });
+            _data.delete("carts", phone + ".items", err => {
+              if (!err) {
+                callback(200, { Status: "the order has been deleted." });
+              } else {
+                callback(400, { Status: "error deleting order." });
+              }
+            });
           } else {
             callback(400, { Status: "Cannot find order data." });
           }
