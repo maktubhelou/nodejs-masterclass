@@ -1,6 +1,8 @@
 # Homework Assignment #3
 
-This app covers the basic functions required of a simple pizza delivery service. Users can create a user ID, create a token which allows them to log in and log out, see the menu, place orders and pay using Stripe. When an order is placed, an e-mail is sent to the user.
+This app covers the basic functions required of a simple pizza delivery service. Users can create a user ID, create a token which allows them to log in and log out, see the menu, place orders and pay using Stripe. When an order is placed, an e-mail is sent to the user. The user can log in on the front end, set up an account, see the menu, place an order, add to an existing order, and pay for the order. The user receives an e-mail confirming the order.
+
+The emphasis here was not on the front-end, which is pretty basic ;)
 
 ## User Stories (Homework Assignment):
 
