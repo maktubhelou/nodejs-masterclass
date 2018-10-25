@@ -357,6 +357,64 @@ handlers.viewCart = (data, callback) => {
     callback(405, undefined, "html");
   }
 };
+// Confirm Payment
+handlers.confirmPayment = (data, callback) => {
+  if (data.method === "get") {
+    //Prepare data for interpolation.
+    const templateData = {
+      "head.title": "Processing Payment",
+      "head.description": "Your payment is processing.",
+      "body.class": "confirmPayment"
+    };
+
+    // Read in the template as a string
+    helpers.getTemplate("confirmPayment", templateData, (err, str) => {
+      if (!err && str) {
+        // Add the universal templates.
+        helpers.addUniversalTemplates(str, templateData, (err, fullString) => {
+          if (!err && fullString) {
+            callback(200, fullString, "html");
+          } else {
+            callback(500, undefined, "html");
+          }
+        });
+      } else {
+        callback(500, undefined, "html");
+      }
+    });
+  } else {
+    callback(405, undefined, "html");
+  }
+};
+// Confirm Credit Card Details for Payment
+handlers.creditCardPage = (data, callback) => {
+  if (data.method === "get") {
+    //Prepare data for interpolation.
+    const templateData = {
+      "head.title": "Processing Payment",
+      "head.description": "Your payment is processing.",
+      "body.class": "creditCardPage"
+    };
+
+    // Read in the template as a string
+    helpers.getTemplate("creditCardPage", templateData, (err, str) => {
+      if (!err && str) {
+        // Add the universal templates.
+        helpers.addUniversalTemplates(str, templateData, (err, fullString) => {
+          if (!err && fullString) {
+            callback(200, fullString, "html");
+          } else {
+            callback(500, undefined, "html");
+          }
+        });
+      } else {
+        callback(500, undefined, "html");
+      }
+    });
+  } else {
+    callback(405, undefined, "html");
+  }
+};
 // Edit Account
 handlers.sessionDeleted = (data, callback) => {
   if (data.method === "get") {
@@ -1041,74 +1099,87 @@ handlers._pay = {};
 // Required fields: email, phone, streetAddress
 // Optional fields: none
 handlers._pay.post = async (data, callback) => {
+  console.log("data passed to pay handler", data.payload.orderData);
+  const cardNumber =
+    typeof data.payload.cardNumber === "string" &&
+    data.payload.cardNumber.trim().length > 0
+      ? data.payload.cardNumber.trim()
+      : false;
   const phone =
-    typeof data.payload.phone === "string" &&
-    data.payload.phone.trim().length === 10
-      ? data.payload.phone.trim()
+    typeof data.payload.phoneOnCard === "string" &&
+    data.payload.phoneOnCard.trim().length === 10
+      ? data.payload.phoneOnCard.trim()
       : false;
   const email =
-    typeof data.payload.email === "string" &&
-    data.payload.email.trim().length > 0 &&
-    data.payload.email.includes("@")
-      ? data.payload.email.trim()
+    typeof data.payload.emailOnCard === "string" &&
+    data.payload.emailOnCard.trim().length > 0 &&
+    data.payload.emailOnCard.includes("@")
+      ? data.payload.emailOnCard.trim()
       : false;
   const streetAddress =
-    typeof data.payload.streetAddress === "string" &&
-    data.payload.streetAddress.trim().length > 0
-      ? data.payload.streetAddress.trim()
+    typeof data.payload.addressOnCard === "string" &&
+    data.payload.addressOnCard.trim().length > 0
+      ? data.payload.addressOnCard.trim()
       : false;
-  if (phone && email && streetAddress) {
-    const token =
-      typeof data.headers.token === "string" &&
-      data.headers.token.trim().length === 20
-        ? data.headers.token.trim()
-        : false;
-    handlers._tokens.verifyToken(token, phone, async tokenIsValid => {
-      if (tokenIsValid) {
-        const {
-          stripeTotal,
-          invoiceTotal,
-          invoiceId,
-          items
-        } = shoppingCart.data;
-        const stripeToken = "tok_visa";
-        const currency = "usd";
-        let details = "";
-        items.forEach(item => {
-          if (item.qty === 1) {
-            details += "<li>" + item.qty + " " + item.title + "</li>";
-          } else {
-            details += "<li>" + item.qty + " " + item.title + "s</li>";
-          }
-        });
-        try {
-          await stripe.charge({
+  const orderData =
+    typeof data.payload.orderData === "string"
+      ? JSON.parse(data.payload.orderData)
+      : false;
+  console.log(phone, email, streetAddress, cardNumber, orderData);
+  if (phone && email && streetAddress && cardNumber && orderData) {
+    if (cardNumber === "4242424242424242") {
+      // @TODO Swap out for real credit card verification sysemt.
+      const token =
+        typeof data.headers.token === "string" &&
+        data.headers.token.trim().length === 20
+          ? data.headers.token.trim()
+          : false;
+      handlers._tokens.verifyToken(token, phone, async tokenIsValid => {
+        if (tokenIsValid) {
+          const { stripeTotal, invoiceTotal, invoiceId, items } = orderData;
+          const stripeToken = "tok_visa";
+          const currency = "usd";
+          let details = "";
+          const stripeOptions = {
             amount: stripeTotal,
             currency,
             source: stripeToken,
             description: "Pizza DELIVERY Charge" + "-" + invoiceId
-          });
-
-          const orderObj = {
-            email,
-            invoiceId,
-            invoiceTotal,
-            details,
-            streetAddress,
-            phone
           };
+          console.log("STRIPE ORDER", stripeOptions);
+          items.forEach(item => {
+            if (item.qty === 1) {
+              details += "<li>" + item.qty + " " + item.type + "</li>";
+            } else {
+              details += "<li>" + item.qty + " " + item.type + "s</li>";
+            }
+          });
+          try {
+            await stripe.charge(stripeOptions);
 
-          await handlers.sendEmailInvoice(orderObj);
-          callback(200);
-        } catch (err) {
-          callback(400, err);
+            const orderObj = {
+              email,
+              invoiceId,
+              invoiceTotal,
+              details,
+              streetAddress,
+              phone
+            };
+
+            await handlers.sendEmailInvoice(orderObj);
+            callback(200);
+          } catch (err) {
+            callback(400, err);
+          }
+        } else {
+          callback(405, "Missing credentials.");
         }
-      } else {
-        callback(405, "Missing credentials.");
-      }
-    });
+      });
+    } else {
+      callback(400, { Error: "Invalid Credit Card." });
+    }
   } else {
-    callback(400, "Missing Required field(s).");
+    callback(400, { Error: "Missing Required field(s)." });
   }
 };
 
@@ -1180,7 +1251,6 @@ handlers._carts.get = (data, callback) => {
       if (!err && tokenData) {
         const phone = tokenData.phone;
         _data.read("carts", phone + ".cart", (err, cartData) => {
-          console.log(cartData);
           if (!err && cartData) {
             callback(false, cartData);
           } else {
@@ -1208,7 +1278,6 @@ handlers._carts.put = (data, callback) => {
       // Read from the items to go in cart (.items)file
       _data.read("carts", phone + ".cart", (err, cartData) => {
         if (!err && cartData) {
-          console.log("cartDAta", cartData);
           const { items } = cartData.data;
           pizzaFound = false;
           items.forEach(item => {

@@ -1,0 +1,43 @@
+<h1>Credit Card Details</h1>
+
+<h2>Credit Card Form</h2>
+<div class="formWrapper">
+  <form action="api/pay" id="chargeCreditCard" method="POST">
+    <input type="hidden" name="_method" value="POST" />
+
+
+
+    <div class="inputWrapper">
+      <div class="inputLabel">Credit Card</div>
+      <input name="cardNumber" type="number" class="cardNumber">
+    </div>
+    <div class="inputWrapper">
+      <div class="inputLabel">Name on Card</div>
+      <input name="nameOnCard" type="text" class="nameOnCard">
+    </div>
+    <div class="inputWrapper">
+      <div class="inputLabel">Address</div>
+      <input name="addressOnCard" type="text" class="addressOnCard">
+    </div>
+    <div class="inputWrapper">
+      <div class="inputLabel">Phone</div>
+      <input name="phoneOnCard" type="number" class="phoneOnCard">
+    </div>
+    <div class="inputWrapper">
+      <div class="inputLabel">Email</div>
+      <input name="emailOnCard" type="text" class="emailOnCard">
+    </div>
+    <div class="inputWrapper hidden">
+      <div class="inputLabel">OrderData</div>
+      <input id="orderData" name="orderData" type="text" class="orderData hidden">
+    </div>
+
+    <h2>Order Total</h2>
+    <h3 id="orderTotal">[no amount yet]</h3>
+    <hr>
+    <div class="formError"></div>
+    <div class="formSuccess">Your card has been successful!</div>
+    <input id="paymentButton" type="submit" class="cta primary" value="Pay!">
+  </form>
+
+</div>

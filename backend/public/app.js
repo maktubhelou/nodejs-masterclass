@@ -283,7 +283,12 @@ app.formResponseProcessor = function(formId, requestPayload, responsePayload) {
   }
 
   // If forms saved successfully and they have success messages, show them
-  var formsWithSuccessMessages = ["accountEdit1", "accountEdit2", "cartsEdit1"];
+  var formsWithSuccessMessages = [
+    "accountEdit1",
+    "accountEdit2",
+    "cartsEdit1",
+    "chargeCreditCard"
+  ];
   if (formsWithSuccessMessages.indexOf(formId) > -1) {
     document.querySelector("#" + formId + " .formSuccess").style.display =
       "block";
@@ -354,19 +359,67 @@ app.loadDataOnPage = () => {
   if (primaryClass == "placeOrder" || primaryClass == "addToOrder") {
     app.loadOrderPage();
   }
-
   if (primaryClass == "accountEdit") {
     app.loadAccountEditPage();
   }
-
+  if (primaryClass == "creditCardPage") {
+    app.loadCreditCardPage();
+  }
   if (primaryClass == "viewCart" || primaryClass == "addToOrder") {
     app.loadCurrentCartPage();
   }
   if (primaryClass == "deleteCart") {
     app.deleteCurrentUserCart();
   }
+  if (primaryClass == "confirmPayment") {
+    app.processPayment();
+  }
 };
-
+app.processPayment = async () => {
+  const phone =
+    typeof app.config.sessionToken.phone === "string"
+      ? app.config.sessionToken.phone
+      : false;
+  if (phone) {
+    await app.client.request(
+      undefined,
+      "api/carts",
+      "GET",
+      { phone },
+      undefined,
+      (statusCode, data) => {
+        if (statusCode === 200 && data) {
+          const { stripeTotal, invoiceId, invoiceTotal, items } = data.data;
+          const { customerDetails } = data;
+          app.client.request(
+            undefined,
+            "api/pay",
+            "POST",
+            undefined,
+            {
+              customerDetails,
+              stripeTotal,
+              invoiceTotal,
+              invoiceId,
+              items
+            },
+            (statusCode, data) => {
+              if (statusCode === 200) {
+                const statusUpdate = document.getElementById("paymentStatus");
+                statusUpdate.innerHTML = "Payment successful!";
+              }
+            }
+          );
+        } else {
+          console.log("error");
+        }
+      }
+    );
+  } else {
+    callback(400, { Error: "Missing required data" });
+  }
+  // @TODO add request for payment credentials and only process api request if processes.
+};
 app.deleteCurrentUserCart = () => {
   const phone =
     typeof app.config.sessionToken.phone === "string"
@@ -442,7 +495,6 @@ app.loadCurrentCartPage = () => {
           const orderDetailsTable = document.getElementById("orderDetails");
           const orderTotal = document.getElementById("orderTotal");
           const tr1 = customerDetailsTable.insertRow();
-          console.log(data);
           data.forEach(item => {
             const itemRow = orderDetailsTable.insertRow();
             const itemCell = itemRow.insertCell(0);
@@ -510,8 +562,7 @@ app.loadShoppingCart = () => {
       undefined,
       undefined,
       (statusCode, data) => {
-        if (statusCode === 200 || statusCode === 400) {
-          console.log(data);
+        if (statusCode === 200) {
           const { items, formattedTotals } = data.data;
           const shoppingCartTable = document.getElementById(
             "shoppingCartTable"
@@ -521,6 +572,7 @@ app.loadShoppingCart = () => {
           if (items && items.length > 0) {
             noCartsMessage.style.display = "none";
             newOrderButton.style.display = "none";
+          } else {
           }
           items.forEach(item => {
             const itemRow = shoppingCartTable.insertRow();
@@ -542,6 +594,15 @@ app.loadShoppingCart = () => {
           subTotalCell.innerHTML = formattedTotals.subTotal;
           taxCell.innerHTML = formattedTotals.tax;
           totalCell.innerHTML = formattedTotals.invoiceTotal;
+        } else if (statusCode === 400) {
+          const cartTables = document.getElementById("cartTables");
+          const addToOrderButton = document.getElementById("addToOrderCta");
+          const checkoutButton = document.getElementById("checkoutCta");
+          const cancelOrderButton = document.getElementById("cancelOrderCta");
+          cartTables.innerHTML = "<h3>You have no shopping carts.</h3>";
+          addToOrderButton.style.display = "none";
+          checkoutButton.style.display = "none";
+          cancelOrderButton.style.display = "none";
         } else {
           app.logUserOut();
         }
@@ -565,9 +626,8 @@ app.loadCheckoutPage = () => {
       undefined,
       (statusCode, data) => {
         if (statusCode === 200 || statusCode === 400) {
-          console.log(data);
           const { items, formattedTotals } = data.data;
-          const orderItems = document.getElementById("orderItems");
+          const orderItems = document.getElementById("orderDetails");
           items.forEach(item => {
             const itemRow = orderItems.insertRow();
             const itemCell = itemRow.insertCell(0);
@@ -581,6 +641,57 @@ app.loadCheckoutPage = () => {
 
           const orderTotal = document.getElementById("orderTotal");
           orderTotal.innerHTML = formattedTotals.invoiceTotal;
+        } else {
+          app.logUserOut();
+        }
+      }
+    );
+  } else {
+    app.logUserOut();
+  }
+};
+
+app.loadCreditCardPage = () => {
+  console.log("loading credit card");
+  const phone =
+    typeof app.config.sessionToken.phone === "string"
+      ? app.config.sessionToken.phone
+      : false;
+  if (phone) {
+    const queryStringObject = {
+      phone: phone
+    };
+    //@TODO add headers here (why don't the headers go in automatically?)
+    app.client.request(
+      undefined,
+      "api/carts",
+      "GET",
+      queryStringObject,
+      undefined,
+      (statusCode, responsePayload) => {
+        console.log(responsePayload);
+        if (statusCode === 200) {
+          document.querySelector("#chargeCreditCard .nameOnCard").value =
+            responsePayload.customerDetails.firstName +
+            " " +
+            responsePayload.customerDetails.lastName;
+          document.querySelector("#chargeCreditCard .addressOnCard").value =
+            responsePayload.customerDetails.streetAddress;
+          document.querySelector("#chargeCreditCard .phoneOnCard").value =
+            responsePayload.customerDetails.phone;
+          document.querySelector("#chargeCreditCard .emailOnCard").value =
+            responsePayload.customerDetails.email;
+          document.querySelector(
+            "#chargeCreditCard .orderData"
+          ).value = JSON.stringify(responsePayload.data);
+          document.getElementById("orderTotal").innerHTML =
+            responsePayload.data.formattedTotals.invoiceTotal;
+          // const hiddenPhoneInputs = document.querySelectorAll(
+          //   "input.hiddenPhoneNumberInput"
+          // );
+          // for (let i = 0; i < hiddenPhoneInputs.length; i++) {
+          //   hiddenPhoneInputs[i].value = responsePayload.phone;
+          // }
         } else {
           app.logUserOut();
         }
