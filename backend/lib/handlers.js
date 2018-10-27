@@ -593,7 +593,8 @@ handlers._users.post = (data, callback) => {
       streetAddress,
       email,
       password: hashedPassword,
-      tosAgreement
+      tosAgreement,
+      createdAt: Date.now()
     };
     _data.create("users", phone, userData, err => {
       if (!err) {
@@ -1099,7 +1100,11 @@ handlers._pay = {};
 // Required fields: email, phone, streetAddress
 // Optional fields: none
 handlers._pay.post = async (data, callback) => {
-  console.log("data passed to pay handler", data.payload.orderData);
+  debug(
+    helpers.ansiColorString.BLUE,
+    "Data Passed To Pay Handler",
+    data.payload.orderData
+  );
   const cardNumber =
     typeof data.payload.cardNumber === "string" &&
     data.payload.cardNumber.trim().length > 0
@@ -1125,7 +1130,6 @@ handlers._pay.post = async (data, callback) => {
     typeof data.payload.orderData === "string"
       ? JSON.parse(data.payload.orderData)
       : false;
-  console.log(phone, email, streetAddress, cardNumber, orderData);
   if (phone && email && streetAddress && cardNumber && orderData) {
     if (cardNumber === "4242424242424242") {
       // @TODO Swap out for real credit card verification sysemt.
@@ -1230,10 +1234,25 @@ handlers._carts.post = (data, callback) => {
                 }.`
               });
             }
+            userData.carts = [];
+            delete cart.customerDetails; //@TODO this is to remove circular data reference. Check later if there's a better way to do this.
+            userData.carts.push(cart);
+            console.log(userData);
+            //@TODO add the same logic to the "update cart" section.
+            //@TODO use random string creator for shopping cart creation.
+            //@TODO find out the best way to update the shopping cart object and use the SAME ONE, with the same ID to add.
+            _data.update("users", phone, userData, err => {
+              if (!err) {
+                callback(200, userData);
+              } else {
+                callback(500, {
+                  Error: "Could not update cart on user object."
+                });
+              }
+            });
           });
-          callback(200);
         } else {
-          callback(500);
+          callback(500, { Error: "could not get user data." });
         }
       });
     } else {

@@ -4,9 +4,12 @@ const debug = util.debuglog("ShoppingCart");
 
 class ShoppingCart {
   constructor() {
+    this.createdAt = Date.now();
     this.data = {};
+    //@TODO remove the customer details as they're already present.
+    //@TODO remove the "delete .customerDetails" from "userCarts update in handlers.js line 1234"
     this.customerDetails = {};
-    this.data.invoiceId = "Invoice-" + Date.now();
+    this.data.invoiceId = "Invoice-" + helpers.createRandomString(10);
     this.data.items = [];
     this.data.subTotal = 0;
     this.data.tax = 0;

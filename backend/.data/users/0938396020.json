@@ -1,0 +1,28 @@
+{
+  "firstName": "EVANS",
+  "lastName": "ALLAN",
+  "phone": "0938396020",
+  "streetAddress": "188BF3 NGUYEN VAN HUONG, 204",
+  "email": "markallanevans@gmail.com",
+  "tosAgreement": true,
+  "createdAt": 1540569011726,
+  "carts": [
+    {
+      "data": {
+        "invoiceId": "Invoice-1540569019357",
+        "items": [{ "type": "Pepperoni", "size": "sm", "qty": 1 }],
+        "subTotal": 8,
+        "tax": 1.2,
+        "total": 9.2,
+        "stripeTotal": 920,
+        "sizeTally": { "sm": 1, "med": 0, "lg": 0 },
+        "invoiceTotal": 9.2,
+        "formattedTotals": {
+          "subTotal": "8.00 $",
+          "tax": "1.20 $",
+          "invoiceTotal": "9.20 $"
+        }
+      }
+    }
+  ]
+}
