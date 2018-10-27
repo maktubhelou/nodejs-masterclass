@@ -36,6 +36,12 @@ e.on("more user info", str => {
 e.on("list carts", str => {
   cli.responders.listCarts();
 });
+e.on("list orders", str => {
+  cli.responders.listOrders(str);
+});
+e.on("more order info", str => {
+  cli.responders.moreOrderInfo(str);
+});
 e.on("more cart info", str => {
   cli.responders.moreCartInfo(str);
 });
@@ -86,6 +92,10 @@ cli.responders.help = () => {
     "more user info --{userId}": "Get more info for a specified user.",
     "list carts": "Show a list of current shopping carts.",
     "more cart info --{userId}": "Get more info on a specific cart.",
+    "list orders --d --u":
+      "Show a list of all orders received in the last 24 hours, (--d = delivered orders, --u = undelievered orders).",
+    "more order info --{invoiceId}":
+      "Show more order info about a specific order",
     "show menu": "Display all available items on menu"
   };
 
@@ -166,14 +176,22 @@ cli.responders.listUsers = () => {
       cli.verticalSpace();
       userIds.forEach(userId => {
         _data.read("users", userId, (err, userData) => {
-          if (!err && userData) {
+          const timeElapsedSinceRegistration = Date.now() - userData.createdAt;
+          const newerThan24Hours =
+            timeElapsedSinceRegistration < 24 * 60 * 60 * 1000 ? true : false;
+          if (!err && userData && newerThan24Hours) {
             let line =
-              "Name: " +
+              "Email: " +
+              userData.email +
+              ", Name: " +
               userData.firstName +
               " " +
               userData.lastName +
               ", Phone: " +
-              userData.phone;
+              userData.phone +
+              ", User Since " +
+              (timeElapsedSinceRegistration / (60 * 60 * 1000)).toFixed(1) +
+              " hours ago";
             console.log(line);
           }
         });
@@ -189,6 +207,10 @@ cli.responders.moreUserInfo = str => {
       ? arr[1].trim()
       : false;
   if (userId) {
+    const userIdType = userId.indexOf("@") > -1 ? "email" : "phone";
+    if (userIdType === "email") {
+      console.log("Please use the phone number to look up the user Id.");
+    }
     _data.read("users", userId, (err, userData) => {
       if (!err && userData) {
         delete userData.password;
@@ -197,13 +219,16 @@ cli.responders.moreUserInfo = str => {
       }
     });
   }
+  console.log(
+    "That does not appear to be a valid user phone number to look up."
+  );
 };
 cli.responders.listCarts = () => {
   _data.list("carts", (err, cartIds) => {
     if (!err && cartIds && cartIds.length > 0) {
       cli.verticalSpace();
       cli.horizontalLine();
-      cli.centered("CURRENT ORDERS");
+      cli.centered("CURRENT OPEN CARTS");
       cli.horizontalLine();
       cli.verticalSpace();
       cartIds.forEach(cartId => {
@@ -229,6 +254,58 @@ cli.responders.listCarts = () => {
     }
   });
 };
+cli.responders.listOrders = str => {
+  str = typeof str === "string" && str.trim().length > 0 ? str : "";
+
+  _data.list("orders", (err, orderIds) => {
+    if (!err && orderIds && orderIds.length > 0) {
+      cli.verticalSpace();
+      cli.horizontalLine();
+      cli.centered("CURRENT OPEN ORDERS");
+      cli.horizontalLine();
+      cli.verticalSpace();
+      orderIds.forEach(orderId => {
+        _data.read("orders", orderId, (err, orderData) => {
+          if (!err && orderId && orderData) {
+            let lowerString = str.toLowerCase();
+            let delivered =
+              typeof orderData.delivered === "boolean"
+                ? orderData.delivered
+                : false;
+            let hoursElapsedSinceReceipt = (
+              (Date.now() - orderData.receivedAt) /
+              (1000 * 60 * 60)
+            ).toFixed(2);
+
+            if (
+              ((lowerString.indexOf("--d") > -1 && delivered) ||
+                (lowerString.indexOf("--u") > -1 && !delivered) ||
+                (lowerString.indexOf("--d") === -1 &&
+                  lowerString.indexOf("--u") === -1)) &&
+              hoursElapsedSinceReceipt < 24
+            ) {
+              let line =
+                "ID:   " +
+                orderData.invoiceId.slice(8) +
+                "   , Customer Phone: " +
+                orderData.phone +
+                ", Street Address: " +
+                orderData.streetAddress +
+                ", Total: " +
+                orderData.invoiceTotal +
+                ", Delivered: " +
+                orderData.delivered +
+                ", Received " +
+                hoursElapsedSinceReceipt +
+                "hrs ago.";
+              console.log(line);
+            }
+          }
+        });
+      });
+    }
+  });
+};
 cli.responders.moreCartInfo = str => {
   arr = str.split("--");
   cartId =
@@ -242,6 +319,21 @@ cli.responders.moreCartInfo = str => {
         console.dir(cartData, { colors: true });
         console.log("Items");
         console.dir(cartData.data.items, { colors: true });
+      }
+    });
+  }
+};
+cli.responders.moreOrderInfo = str => {
+  arr = str.split("--");
+  invoiceId =
+    typeof arr[1] === "string" && arr[1].trim().length > 0
+      ? arr[1].trim()
+      : false;
+  if (invoiceId) {
+    _data.read("orders", "Invoice-" + invoiceId, (err, invoiceData) => {
+      if (!err && invoiceData) {
+        cli.verticalSpace();
+        console.dir(invoiceData, { colors: true });
       }
     });
   }
@@ -320,6 +412,8 @@ cli.processInput = str => {
       "more user info",
       "list carts",
       "more cart info",
+      "list orders",
+      "more order info",
       "show menu"
     ];
 

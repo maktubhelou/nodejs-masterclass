@@ -1163,15 +1163,26 @@ handlers._pay.post = async (data, callback) => {
 
             const orderObj = {
               email,
+              receivedAt: Date.now(),
               invoiceId,
               invoiceTotal,
+              items,
               details,
               streetAddress,
-              phone
+              phone,
+              delivered: false
             };
 
             await handlers.sendEmailInvoice(orderObj);
-            callback(200);
+            _data.create("orders", invoiceId, orderObj, err => {
+              if (!err) {
+                callback(200);
+              } else {
+                callback(400, {
+                  Status: "It appears your order has already been placed."
+                });
+              }
+            });
           } catch (err) {
             callback(400, err);
           }
